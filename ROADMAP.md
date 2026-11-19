@@ -2,7 +2,7 @@
 
 ## Nu / Next
 
-Steg 6 klart: panelen uppdateras av sig själv, och grafen går att skrolla i ett stort repo (rig-dashboard). Nästa: steg 7, terminalreserven.
+Steg 8 är skrivet och testat (36 av 36) för grenlistan. Kvar: prova i appen. Sedan steg 7 (terminalen) eller 9 (dela).
 
 ## Steg
 
@@ -124,3 +124,12 @@ Steg 6 klart: panelen uppdateras av sig själv, och grafen går att skrolla i et
   färg, åt höger) med logaritmisk längd, och ett färgat statuschip. Hovring
   visar sha, datum, uppströmsgren och före/efter. I terminalen, som saknar
   `Svg`, är grupperna kvar som Markdown-tabeller.
+- 2026-11-19, steg 8: varje gren i fliken Branches är en egen rad (en SVG-remsa)
+  med en knapp `›` till höger, eftersom klick inte når in i en SVG. Knappen
+  öppnar grenen: modden läser `git log base..gren` (högst 15 commits) och
+  `git diff --numstat base...gren` (de 10 mest ändrade filerna), och visar dem
+  under raden. **Ask Claude about it** fyller promptrutan med en fråga om
+  grenen (innehåll, redo att slås ihop, behöver uppdateras, kan tas bort) som
+  slutar med "Don't change anything yet." Den skickas inte, Daniel trycker
+  själv. **Copy name** kopierar grennamnet. Klick på commits i grafen går
+  fortfarande inte; där finns hovringen.

@@ -109,7 +109,9 @@ test('the pane shows the branches in groups, on every surface', async ($, on) =>
       ])
     } else {
       const lists = (await ui.findAll({ type: 'Svg' })).map(list => (list.props as { alt: string }).alt)
-      expect(lists).toEqual(['2 branches: main (base), feature/x (open).', '1 branch: origin/cms (merged).'])
+      // One drawn row per branch, each with its open button.
+      expect(lists).toEqual(['1 branch: main (base).', '1 branch: feature/x (open).', '1 branch: origin/cms (merged).'])
+      expect(await ui.find({ key: 'open-feature/x' })).toBeDefined()
     }
     await ui.press({ key: 'tab-graph' })
     await ui.unmount()
@@ -125,9 +127,9 @@ test('a group header folds its branches away and back', async ($, on) => {
   await ui.press({ key: 'tab-branches' })
   const lists = async () => (await ui.findAll({ type: 'Svg' })).map(list => (list.props as { alt: string }).alt)
 
-  expect(await lists()).toHaveLength(2)
+  expect(await lists()).toHaveLength(3)
   await ui.press({ key: 'toggle-old' })
-  expect((await lists())[2]).toBe('1 branch: old (stale).')
+  expect((await lists())[3]).toBe('1 branch: old (stale).')
 
   await ui.press({ key: 'toggle-active' })
   expect((await lists()).some(alt => alt.includes('feature/x'))).toBe(false)
@@ -227,5 +229,49 @@ test("Claude's git commands make the pane read the repo again", async ($, on) =>
   await $.tool.call({ tool: 'Bash', command: 'git commit -m next' })
   await new Promise(resolve => setTimeout(resolve, 10))
   expect(await source()).toContain('commit b2')
+  await ui.unmount()
+})
+
+test('opening a branch shows its commits and files, and Ask fills the prompt', async ($, on) => {
+  const filled: string[] = []
+  on('command.register', () => ({ value: { command: 'branchline' } }))
+  on('ui.open', () => ({ value: { isPlaced: true } }))
+  on('prompt.fill', (_, e) => {
+    filled.push(e.text)
+    return { isFilled: true }
+  })
+  on('process.run', (_, e) => {
+    const args = e.argv.join(' ')
+    if (args.includes('origin/main..feature/x')) {
+      return { value: { exitCode: 0, stdout: [row('b2', FEATURE_DATE, 'Daniel', 'Add <menu>'), row('b1', FEATURE_DATE, 'Daniel', 'Start menu')].join('\n') + '\n', stderr: '' } }
+    }
+    if (args.includes('--numstat')) return { value: { exitCode: 0, stdout: '10\t2\tsrc/menu.ts\n1\t0\tREADME.md\n', stderr: '' } }
+    return { value: fakeGit(e.argv) }
+  })
+  await $.command.run({ command: 'branchline' })
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  await ui.press({ key: 'tab-branches' })
+
+  await ui.press({ key: 'open-feature/x' })
+  await new Promise(resolve => setTimeout(resolve, 10))
+  const details = (await ui.find({ type: 'Markdown', text: /not on/ }))?.text ?? ''
+  expect(details.split('\n')).toEqual([
+    '**2 commits** not on `origin/main` · 1 behind · 2 files, +11 −2',
+    '',
+    `- \`b2\` ${FEATURE_DATE} Daniel: Add \\<menu\\>`,
+    `- \`b1\` ${FEATURE_DATE} Daniel: Start menu`,
+    '',
+    '- `src/menu.ts` +10 −2',
+    '- `README.md` +1 −0',
+  ])
+  expect((await ui.find({ key: 'open-feature/x' }))?.text).toBe('⌄')
+
+  await ui.press({ key: 'ask-feature/x' })
+  expect(filled).toHaveLength(1)
+  expect(filled[0]).toContain('`feature/x`')
+  expect(filled[0]).toContain("Don't change anything yet.")
+
+  await ui.press({ key: 'open-feature/x' })
+  expect(await ui.find({ type: 'Markdown', text: /not on/ })).toBeUndefined()
   await ui.unmount()
 })

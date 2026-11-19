@@ -1,13 +1,14 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import type { BranchGroup, FoldMode, Snapshot, View } from '../types'
+import type { Branch, BranchDetails, BranchGroup, FoldMode, Snapshot, View } from '../types'
 import { compactCommits } from './core/compact'
 import { layoutGraph, tipOf } from './core/layout'
 import { ROW, graphSvg } from './core/svg'
 import { branchListSvg } from './core/branches-svg'
+import { askPrompt, detailsMarkdown } from './core/details'
 import { branchTable, groupBranches, headline } from './core/table'
-import { readRepo, readSignature } from './repo'
+import { readBranchDetails, readRepo, readSignature } from './repo'
 import { createWatcher, runsGit, type Watcher } from './watch'
 
 const PANE = 'branchline'
@@ -25,6 +26,28 @@ const snapshot = atom({ plugin: 'git-branchline', key: 'snapshot' } as const, LO
 // Folding: 'auto' folds only when the commits do not fit in the pane; the
 // button sets 'fold' or 'expand' for the rest of the session.
 const foldMode = atom({ plugin: 'git-branchline', key: 'foldMode' } as const, 'auto' as FoldMode)
+
+// The branch opened in the Branches tab and what was read for it.
+const openedBranch = atom({ plugin: 'git-branchline', key: 'opened' } as const, null as BranchDetails | null, {
+  shape: 'opened-1',
+})
+
+/** Width kept at the right of each branch row for its open button. */
+const ROW_BUTTON = 36
+
+/** Opens a branch (reading its commits and files), or closes it with `undefined`. */
+const openBranch = async ($: EngineInterface, base: string, name: string | undefined): Promise<void> => {
+  if (name === undefined) return void (await update($, openedBranch, () => null))
+  await update($, openedBranch, () => ({ name, state: 'loading' }))
+  let details: BranchDetails
+  try {
+    details = await readBranchDetails(argv => $.process.run(argv), base, name)
+  } catch (error) {
+    details = { name, state: 'error', message: error instanceof Error ? error.message : String(error) }
+  }
+  // Only if the person has not opened another branch meanwhile.
+  await update($, openedBranch, current => (current?.name === name ? details : current))
+}
 
 // Which tab the pane shows.
 const view = atom({ plugin: 'git-branchline', key: 'view' } as const, 'graph' as View)
@@ -107,6 +130,7 @@ export const register: Register = on => {
     const mode = await read($, foldMode)
     const hidden = await read($, hiddenGroups)
     const tab = await read($, view)
+    const opened = await read($, openedBranch)
 
     if (shot.state === 'loading') return <Text dimColor>Reading the repository…</Text>
     if (shot.state === 'not-repo') return <Text>This session's folder is not a Git repository.</Text>
@@ -167,28 +191,61 @@ export const register: Register = on => {
 
     function branchesTab() {
       if (shot.state !== 'ok') return null
+      const base = shot.base
       const groups = groupBranches(shot.branches)
       if (groups.length === 0) return <Text dimColor>No branches yet.</Text>
       // Each branch's dot takes the color of its tip's lane in the graph.
       const laneOf = (sha: string) =>
         layout.rows.find(row => row.id.startsWith(sha) || sha.startsWith(row.id))?.lane
       const today = isoToday()
+      const drawsRows = Svg && e.surface !== 'terminal'
+
+      const branchRow = (branch: Branch) => {
+        const isOpen = opened?.name === branch.name
+        const strip = branchListSvg([branch], { width: width - ROW_BUTTON, today, laneOf })
+        return (
+          <Box key={`branch-${branch.name}`} flexDirection="column">
+            <Box flexDirection="row" alignItems="center">
+              {Svg && <Svg source={strip.source} alt={strip.alt} width={width - ROW_BUTTON} height={strip.height} />}
+              <Button
+                key={`open-${branch.name}`}
+                plain
+                dimColor={!isOpen}
+                onPress={() => void openBranch($, base, isOpen ? undefined : branch.name)}
+              >
+                {isOpen ? '⌄' : '›'}
+              </Button>
+            </Box>
+            {isOpen && opened && (
+              <Box flexDirection="column" gap={1} paddingLeft={2} paddingBottom={1}>
+                <Markdown text={detailsMarkdown(branch, opened, base)} />
+                <Box flexDirection="row" gap={1}>
+                  <Button key={`ask-${branch.name}`} variant="primary" onPress={() => void $.prompt.fill({ text: askPrompt(branch, base), mode: 'replace' }).catch(() => $.ui.toast('Could not fill the prompt box.'))}>
+                    Ask Claude about it
+                  </Button>
+                  <Button key={`copy-${branch.name}`} onPress={press => void $.ui.copy({ text: branch.name, surface: press.surface }).catch(() => $.ui.toast('Could not copy the name.'))}>
+                    Copy name
+                  </Button>
+                </Box>
+              </Box>
+            )}
+          </Box>
+        )
+      }
+
       return (
         <Box flexDirection="column" gap={1}>
           {groups.map(group => {
             const isHidden = hidden.includes(group.id)
             const toggle = () =>
               void update($, hiddenGroups, list => (isHidden ? list.filter(id => id !== group.id) : [...list, group.id]))
-            const list = !isHidden && Svg && e.surface !== 'terminal'
-              ? branchListSvg(group.branches, { width, today, laneOf })
-              : undefined
             return (
               <Box key={`group-${group.id}`} flexDirection="column">
                 <Button key={`toggle-${group.id}`} plain dimColor={isHidden} onPress={toggle}>
                   {`${isHidden ? '▸' : '▾'} ${group.title} (${group.branches.length})`}
                 </Button>
-                {list && Svg && <Svg source={list.source} alt={list.alt} width={width} height={list.height} isInteractive />}
-                {!isHidden && !list && <Markdown text={branchTable(group.branches)} />}
+                {!isHidden && drawsRows && group.branches.map(branchRow)}
+                {!isHidden && !drawsRows && <Markdown text={branchTable(group.branches)} />}
               </Box>
             )
           })}
@@ -197,7 +254,6 @@ export const register: Register = on => {
     }
   })
 }
-
 const isoToday = (): string => {
   const now = new Date()
   const pad = (n: number) => String(n).padStart(2, '0')

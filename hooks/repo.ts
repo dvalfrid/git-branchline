@@ -1,7 +1,7 @@
 // Reads the repository with git. Takes a `run` function instead of `$`, so
 // tests and other hosts can supply their own.
 
-import type { Snapshot } from '../types'
+import type { BranchDetails, Snapshot } from '../types'
 import {
   LOG_FORMAT,
   REF_FORMAT,
@@ -104,3 +104,43 @@ export const readSignature = async (run: Run): Promise<string> => {
   const head = await run(['git', 'rev-parse', '--verify', '--quiet', 'HEAD'])
   return `${head.stdout.trim()}\n${refs.stdout}`
 }
+
+/** How many of the branch's own commits and changed files the details list. */
+export const DETAIL_COMMITS = 15
+export const DETAIL_FILES = 10
+
+/**
+ * What a branch has that the base lacks: its commits and the files they
+ * change. For the base itself, its latest commits and no files.
+ */
+export const readBranchDetails = async (run: Run, base: string, name: string): Promise<BranchDetails> => {
+  const isBase = name === base || base.endsWith(`/${name}`)
+  const range = isBase ? [name] : [`${base}..${name}`]
+  const log = await run(['git', 'log', '-n', String(DETAIL_COMMITS), '--format=%h%x1f%ad%x1f%an%x1f%s', '--date=short', ...range, '--'])
+  if (log.exitCode !== 0) return { name, state: 'error', message: firstLine(log.stderr) }
+  const commits = log.stdout
+    .split(/\r?\n/)
+    .filter(line => line.trim() !== '')
+    .map(line => {
+      const [id = '', date = '', author = '', subject = ''] = line.split('\x1f')
+      return { id, date, author, subject }
+    })
+  if (isBase) return { name, state: 'ok', isBase, commits, files: [], added: 0, removed: 0, fileCount: 0 }
+
+  const numstat = await run(['git', 'diff', '--numstat', `${base}...${name}`, '--'])
+  const files = numstat.exitCode === 0 ? parseNumstat(numstat.stdout) : []
+  const added = files.reduce((sum, file) => sum + file.added, 0)
+  const removed = files.reduce((sum, file) => sum + file.removed, 0)
+  const top = [...files].sort((a, b) => b.added + b.removed - (a.added + a.removed)).slice(0, DETAIL_FILES)
+  return { name, state: 'ok', isBase, commits, files: top, added, removed, fileCount: files.length }
+}
+
+/** `git diff --numstat`: `added<TAB>removed<TAB>path`, `-` for binary files. */
+export const parseNumstat = (stdout: string): { path: string; added: number; removed: number }[] =>
+  stdout
+    .split(/\r?\n/)
+    .filter(line => line.trim() !== '')
+    .map(line => {
+      const [added = '0', removed = '0', ...path] = line.split('\t')
+      return { path: path.join('\t'), added: Number(added) || 0, removed: Number(removed) || 0 }
+    })

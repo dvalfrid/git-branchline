@@ -64,6 +64,23 @@ export type Snapshot =
       readAt: string
     }
 
+/** What a branch has that the base lacks, read when the branch is opened in the pane. */
+export type BranchDetails =
+  | { name: string; state: 'loading' }
+  | { name: string; state: 'error'; message: string }
+  | {
+      name: string
+      state: 'ok'
+      /** True for the base branch itself: its latest commits, no diff. */
+      isBase: boolean
+      commits: { id: string; date: string; author: string; subject: string }[]
+      /** The most changed files, at most DETAIL_FILES. */
+      files: { path: string; added: number; removed: number }[]
+      added: number
+      removed: number
+      fileCount: number
+    }
+
 declare module 'claude-code' {
   interface PluginState {
     'git-branchline': {
@@ -74,6 +91,8 @@ declare module 'claude-code' {
       hiddenGroups: BranchGroup[]
       /** The tab the pane shows. */
       view: View
+      /** The branch opened in the Branches tab, with what was read for it. */
+      opened: Shaped<BranchDetails | null>
     }
   }
 }
