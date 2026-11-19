@@ -2,8 +2,8 @@
 
 ## Nu / Next
 
-Steg 5 är skrivet och testat (25 av 25), med hovring. Kvar: se ihopslagna rader och knappen
-i panelen. Sedan steg 6, levande uppdatering.
+Steg 6 är skrivet och testat (29 av 29). Kvar: se att panelen uppdateras av sig
+själv i desktopappen. Sedan steg 7, terminalreserven.
 
 ## Steg
 
@@ -17,7 +17,7 @@ i panelen. Sedan steg 6, levande uppdatering.
 - [x] **3. Banlayout**: räkna ut banor automatiskt och testa mot ett fall med
       merge-commits (två föräldrar) och grenar som gått ihop.
 - [x] **4. SVG-graf på desktop**: prickar, kanter, ref-piller, HEAD markerad.
-- [ ] **5. Komprimera** commitföljder utan refs (valbart).
+- [x] **5. Komprimera** commitföljder utan refs (valbart).
 - [ ] **6. Levande uppdatering**: `tool.call`-hook för git-kommandon och
       polling av HEAD/refs-hash via `$.clock.every`.
 - [ ] **7. Terminalreserv**: textgraf för `surface === 'terminal'`.
@@ -83,3 +83,12 @@ i panelen. Sedan steg 6, levande uppdatering.
   kan inte rita `Svg`, och en `Button` tar bara text som innehåll. Att fälla ut
   en enskild grupp genom att klicka på den kräver att grafen delas upp i bitar
   med en knapp på den ihopslagna raden (se öppna frågor).
+- 2026-11-19, steg 6: `hooks/watch.ts` läser ett billigt fingeravtryck av repot
+  (alla refs med commit och vilken gren som är utcheckad, plus `HEAD`) och läser
+  om allt bara när det har ändrats. Fingeravtrycket kollas var 5:e sekund
+  (`$.clock.every`, fångar ändringar i terminal och GitKraken) och direkt efter
+  varje Bash- eller PowerShell-anrop som kör `git`. `/branchline` läser alltid
+  om. Kontroller som kommer medan en läsning pågår slås ihop till en till.
+  Hookarna på verktygsanrop har `.catch`, så ett fel i modden aldrig stoppar
+  Claudes kommandon. Steg 5 bocka av utan att ha setts med ihopslagna rader i
+  appen (det här repot har inga).

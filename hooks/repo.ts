@@ -92,3 +92,15 @@ const firstLine = (text: string): string => text.trim().split(/\r?\n/)[0] || 'gi
 const pad = (n: number): string => String(n).padStart(2, '0')
 const isoDate = (date: Date): string =>
   `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+
+/**
+ * A cheap fingerprint of the repo: every ref with its commit, which branch is
+ * checked out, and HEAD's commit (for a detached HEAD). Any commit, fetch,
+ * pull, checkout, merge, rebase, reset or tag changes it.
+ */
+export const readSignature = async (run: Run): Promise<string> => {
+  const refs = await run(['git', 'for-each-ref', '--format=%(refname) %(objectname) %(HEAD)'])
+  if (refs.exitCode !== 0) return 'not-repo'
+  const head = await run(['git', 'rev-parse', '--verify', '--quiet', 'HEAD'])
+  return `${head.stdout.trim()}\n${refs.stdout}`
+}

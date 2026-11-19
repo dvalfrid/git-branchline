@@ -141,3 +141,41 @@ test('quiet stretches fold, and the button shows every commit', async ($, on) =>
   expect((await ui.find({ key: 'compact' }))?.text).toBe('Fold quiet stretches')
   await ui.unmount()
 })
+
+test("Claude's git commands make the pane read the repo again", async ($, on) => {
+  let tip = 'a1'
+  on('command.register', () => ({ value: { command: 'branchline' } }))
+  on('ui.open', () => ({ value: { isPlaced: true } }))
+  on('tool.call', () => ({ result: {} }))
+  on('process.run', (_, e) => {
+    const args = e.argv.join(' ')
+    // The signature and the refs follow `tip`, so a new commit changes both.
+    if (args.includes('%(refname) %(objectname)')) {
+      return { value: { exitCode: 0, stdout: `refs/heads/main ${tip} *\n`, stderr: '' } }
+    }
+    if (args.includes('rev-parse --verify')) return { value: { exitCode: 0, stdout: `${tip}\n`, stderr: '' } }
+    if (args.includes('for-each-ref') && !args.includes('ahead-behind')) {
+      return { value: { exitCode: 0, stdout: row('refs/heads/main', tip, '', '2026-11-19', '*') + '\n', stderr: '' } }
+    }
+    if (args.includes(' log ')) {
+      return { value: { exitCode: 0, stdout: row(tip, '', '2026-11-19', 'Daniel', 'HEAD -> main', `commit ${tip}`) + RS, stderr: '' } }
+    }
+    return { value: fakeGit(e.argv) }
+  })
+
+  await $.command.run({ command: 'branchline' })
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  const source = async () => ((await ui.find({ type: 'Svg' }))?.props as { source: string }).source
+  expect(await source()).toContain('commit a1')
+
+  // A command without git leaves the pane as it is.
+  tip = 'b2'
+  await $.tool.call({ tool: 'Bash', command: 'ls' })
+  await new Promise(resolve => setTimeout(resolve, 10))
+  expect(await source()).toContain('commit a1')
+
+  await $.tool.call({ tool: 'Bash', command: 'git commit -m next' })
+  await new Promise(resolve => setTimeout(resolve, 10))
+  expect(await source()).toContain('commit b2')
+  await ui.unmount()
+})
