@@ -4,6 +4,7 @@ import type { EngineInterface, Register } from 'claude-code'
 import type { Branch, BranchDetails, BranchGroup, FoldMode, Notice, PendingDelete, Snapshot, View } from '../types'
 import { compactCommits } from './core/compact'
 import { layoutGraph, tipOf } from './core/layout'
+import { assignOwners, edgeOwner } from './core/owners'
 import { LANE_COLORS, ROW, graphSvg, pills } from './core/svg'
 import { textGraph } from './core/textgraph'
 import { branchListSvg } from './core/branches-svg'
@@ -187,6 +188,11 @@ export const register: Register = on => {
     const folded = mode === 'fold' || (mode === 'auto' && !fits)
     const rows = folded ? compactCommits(shot.commits) : shot.commits
     const layout = layoutGraph(rows, tipOf(rows, shot.base))
+    // Which branch each commit belongs to: graph colors, hover and the Branches dots follow it.
+    const owners = assignOwners(rows, shot.base)
+    const rowIds = layout.rows.map(row => ({ id: rows[row.row]!.id }))
+    const colorOfCommit = (id: string, lane: number) => { const o = owners.ownerOf.get(id); return o === undefined ? lane : owners.owners[o]!.color }
+    const colorOfEdge = (edge: (typeof layout.edges)[number]) => { const o = edgeOwner(edge, rowIds, owners); return o === undefined ? edge.viaLane : owners.owners[o]!.color }
     const width = graphWidth(e.props.bodyColumns)
 
     const tabs = (
@@ -227,7 +233,7 @@ export const register: Register = on => {
 
       if (e.surface === 'terminal' || !Svg) {
         // The terminal draws no SVG: a text graph, a line per commit.
-        const lines = textGraph(rows, layout, { headId })
+        const lines = textGraph(rows, layout, { headId, edgeColor: colorOfEdge, rowColor: colorOfCommit })
         return (
           <Box flexDirection="column">
             {foldButton}
@@ -244,7 +250,7 @@ export const register: Register = on => {
         )
       }
 
-      const graph = graphSvg(rows, layout, { headId, width })
+      const graph = graphSvg(rows, layout, { headId, width, owners })
       return (
         <Box flexDirection="column" gap={1}>
           {foldButton}
@@ -275,9 +281,11 @@ export const register: Register = on => {
       const base = shot.base
       const groups = groupBranches(shot.branches)
       if (groups.length === 0) return <Text dimColor>No branches yet.</Text>
-      // Each branch's dot takes the color of its tip's lane in the graph.
-      const laneOf = (sha: string) =>
-        layout.rows.find(row => row.id.startsWith(sha) || sha.startsWith(row.id))?.lane
+      // Each branch's dot takes its color in the graph.
+      const laneOf = (sha: string) => {
+        const row = layout.rows.find(row => row.id.startsWith(sha) || sha.startsWith(row.id))
+        return row && colorOfCommit(row.id, row.lane)
+      }
       const today = isoToday()
       const drawsRows = Svg && e.surface !== 'terminal'
 

@@ -42,7 +42,9 @@ test('the svg has a dot per commit, a path per edge, and escapes text', () => {
   expect(source).toContain(`height="${2 * ROW}"`)
   expect(source.match(/<circle class="f/g)).toHaveLength(2)
   expect(source.match(/<circle class="ring"/g)).toHaveLength(1)
-  expect(source.match(/<path /g)).toHaveLength(1)
+  // One drawn line per edge (plus its wider, invisible hover twin).
+  expect(source.match(/<path class="s/g)).toHaveLength(1)
+  expect(source.match(/<path class="hl"/g)).toHaveLength(1)
   expect(source).toContain('Fix &lt;b&gt; &amp; &quot;quotes&quot;')
   expect(source).not.toContain('<b>')
 })

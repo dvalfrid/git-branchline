@@ -5,7 +5,7 @@
 import type { GraphCommit } from './compact'
 import type { Layout } from './layout'
 
-/** A run of text in one lane's color (lane undefined: no color of its own). */
+/** A run of text in one color (an index into the lane colors; undefined: none of its own). */
 export type Span = { text: string; lane?: number }
 
 export type TextLine = {
@@ -40,7 +40,17 @@ const GLYPHS: Record<string, string> = {
 const glyph = (flags: Flags): string =>
   GLYPHS[`${flags.u ? 'u' : ''}${flags.d ? 'd' : ''}${flags.l ? 'l' : ''}${flags.r ? 'r' : ''}`] ?? ' '
 
-export const textGraph = (commits: GraphCommit[], layout: Layout, options: { headId?: string; maxRows?: number } = {}): TextLine[] => {
+export type TextGraphOptions = {
+  headId?: string
+  maxRows?: number
+  /** Color of an edge and of a commit; by lane when absent. */
+  edgeColor?: (edge: Layout['edges'][number]) => number
+  rowColor?: (id: string, lane: number) => number
+}
+
+export const textGraph = (commits: GraphCommit[], layout: Layout, options: TextGraphOptions = {}): TextLine[] => {
+  const edgeColor = options.edgeColor ?? (edge => edge.viaLane)
+  const rowColor = options.rowColor ?? ((_, lane) => lane)
   const rows = Math.min(layout.rows.length, options.maxRows ?? 150)
   // Two cells per lane, without a spacer after the last.
   const width = layout.laneCount * 2 - 1
@@ -54,10 +64,10 @@ export const textGraph = (commits: GraphCommit[], layout: Layout, options: { hea
     const cells: Span[] = Array.from({ length: width }, () => ({ text: ' ' }))
     for (const edge of layout.edges) {
       const to = edge.to ?? Infinity
-      if (edge.from < r && r < to) cells[edge.viaLane * 2] = { text: '│', lane: edge.viaLane }
+      if (edge.from < r && r < to) cells[edge.viaLane * 2] = { text: '│', lane: edgeColor(edge) }
     }
     const isHead = commit.id === options.headId
-    cells[row.lane * 2] = { text: commit.count ? '■' : isHead ? '◉' : '●', lane: row.lane }
+    cells[row.lane * 2] = { text: commit.count ? '■' : isHead ? '◉' : '●', lane: rowColor(commit.id, row.lane) }
     lines.push({ graph: merge(cells), commit, isHead })
 
     if (r === rows - 1) break
@@ -71,7 +81,7 @@ export const textGraph = (commits: GraphCommit[], layout: Layout, options: { hea
       if (!(edge.from <= r && r < to)) continue
       const top = r === edge.from ? edge.fromLane : edge.viaLane
       const bottom = r + 1 === to ? edge.toLane : edge.viaLane
-      const color = edge.viaLane
+      const color = edgeColor(edge)
       if (top === bottom) {
         set(flags, laneAt, top * 2, { u: true, d: true }, color)
         continue

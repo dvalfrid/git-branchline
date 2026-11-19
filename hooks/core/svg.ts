@@ -4,6 +4,7 @@
 
 import type { GraphCommit } from './compact'
 import type { Layout } from './layout'
+import { edgeOwner, type Owners } from './owners'
 
 export const ROW = 24
 export const LANE = 16
@@ -29,6 +30,8 @@ const STYLE = [
   '.tag{fill:none;stroke:#888780;stroke-dasharray:2 2}.rem{fill:none}.both{stroke-width:1.5}',
   '.ring{fill:none;stroke:#BA7517;stroke-width:2}',
   '.hit{fill:transparent}.r:hover .hit{fill:#88878026}',
+  '.hl{fill:none;stroke:transparent;stroke-width:10}.b{transition:opacity .12s}.bs:hover .b{opacity:.25}.bs .b:hover{opacity:1}',
+  '.st{font-size:10.5px;font-style:italic}',
   ...LANE_COLORS.map((color, i) => `.s${i}{stroke:${color}}.f${i}{fill:${color}}`),
   '@media (prefers-color-scheme:dark){',
   '.fg{fill:#e8e6dc}.dim{fill:#a3a19a}',
@@ -40,6 +43,8 @@ const STYLE = [
 ].join('')
 
 export type GraphOptions = {
+  /** Which branch each commit belongs to: colors and hover follow branches, not lanes. */
+  owners?: Owners
   /** The checked-out commit, ringed. */
   headId?: string
   maxRows?: number
@@ -77,36 +82,77 @@ const draw = (commits: GraphCommit[], layout: Layout, rows: number, options: Gra
   const height = Math.max(rows, 1) * ROW
   const textX = PAD + layout.laneCount * LANE + 8
   const out: string[] = []
+  const owners = options.owners
+  const ids = layout.rows.map(row => ({ id: commits[row.row]!.id }))
+  // A branch's color where owners are known, else its lane's.
+  const edgeColor = (edge: Layout['edges'][number]) => {
+    const owner = owners ? edgeOwner(edge, ids, owners) : undefined
+    return owner !== undefined ? owners!.owners[owner]!.color : color(edge.viaLane)
+  }
+  const rowColor = (id: string, lane: number) => {
+    const owner = owners?.ownerOf.get(id)
+    return owner !== undefined ? owners!.owners[owner]!.color : color(lane)
+  }
 
   out.push(
     `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMinYMin meet">`,
     `<style>${STYLE}</style>`,
-    '<g fill="none" stroke-width="2" stroke-linecap="round">',
   )
+
+  // Lines and dots, one group per branch: hovering any part of a branch
+  // brings it forward, dims the rest and names it.
+  type Part = { edges: string[]; dots: string[] }
+  const parts = new Map<number, Part>()
+  const part = (key: number) => parts.get(key) ?? (parts.set(key, { edges: [], dots: [] }), parts.get(key)!)
   for (const edge of layout.edges) {
     if (edge.from >= rows) continue
     const to = edge.to !== undefined && edge.to < rows ? edge.to : undefined
-    out.push(`<path class="s${color(edge.viaLane)}" d="${edgePath(edge.from, to, edge.fromLane, edge.viaLane, edge.toLane, height)}"/>`)
+    const d = edgePath(edge.from, to, edge.fromLane, edge.viaLane, edge.toLane, height)
+    const key = owners ? (edgeOwner(edge, ids, owners) ?? -1) : -1
+    part(key).edges.push(`<path class="s${edgeColor(edge)}" d="${d}"/><path class="hl" d="${d}"/>`)
+  }
+  for (const row of layout.rows.slice(0, rows)) {
+    const commit = commits[row.row]!
+    const x = laneX(row.lane)
+    const y = rowY(row.row)
+    const c = rowColor(commit.id, row.lane)
+    const key = owners?.ownerOf.get(commit.id) ?? -1
+    if (commit.count) {
+      // A folded chain: a square instead of a dot.
+      const side = RADIUS * 2 + 2
+      part(key).dots.push(`<rect class="f${c}" x="${x - side / 2}" y="${y - side / 2}" width="${side}" height="${side}" rx="2"/>`)
+    } else {
+      part(key).dots.push(`<circle class="f${c}" cx="${x}" cy="${y}" r="${commit.refs.length > 0 ? RADIUS + 1 : RADIUS}"/>`)
+    }
+  }
+  out.push('<g class="bs">')
+  for (const [key, { edges, dots }] of parts) {
+    const owner = key >= 0 ? owners?.owners[key] : undefined
+    const title = owner ? `<title>${esc(owner.isMerged ? `${owner.name} (merged)` : owner.name)}</title>` : ''
+    out.push(`<g class="b">${title}<g fill="none" stroke-width="2" stroke-linecap="round">${edges.join('')}</g>${dots.join('')}</g>`)
   }
   out.push('</g>')
+
+  // Where each branch starts (its oldest commit drawn, when it has a parent),
+  // a small label in its color: the name at the bottom of its line too.
+  const starts = new Map<string, { name: string; color: number }[]>()
+  for (const owner of owners?.owners ?? []) {
+    if (owner.color === 0 || owner.start === owner.tip) continue
+    const startRow = layout.rows.findIndex(row => commits[row.row]!.id === owner.start)
+    if (startRow < 0 || startRow >= rows || commits[layout.rows[startRow]!.row]!.parents.length === 0) continue
+    starts.set(owner.start, [...(starts.get(owner.start) ?? []), { name: owner.name, color: owner.color }])
+  }
 
   for (const row of layout.rows.slice(0, rows)) {
     const commit = commits[row.row]!
     const x = laneX(row.lane)
     const y = rowY(row.row)
-    const hasRefs = commit.refs.length > 0
+    if (commit.id === options.headId) out.push(`<circle class="ring" cx="${x}" cy="${y}" r="${RADIUS + 4}"/>`)
+    // The row's hover area starts at the text, leaving the lanes to the branches.
     out.push(
       `<g class="r"><title>${esc(tooltip(commit))}</title>`,
-      `<rect class="hit" x="0" y="${row.row * ROW}" width="${width}" height="${ROW}"/>`,
+      `<rect class="hit" x="${textX - 4}" y="${row.row * ROW}" width="${width - textX + 4}" height="${ROW}"/>`,
     )
-    if (commit.count) {
-      // A folded chain: a square instead of a dot.
-      const side = RADIUS * 2 + 2
-      out.push(`<rect class="f${color(row.lane)}" x="${x - side / 2}" y="${y - side / 2}" width="${side}" height="${side}" rx="2"/>`)
-    } else {
-      out.push(`<circle class="f${color(row.lane)}" cx="${x}" cy="${y}" r="${hasRefs ? RADIUS + 1 : RADIUS}"/>`)
-    }
-    if (commit.id === options.headId) out.push(`<circle class="ring" cx="${x}" cy="${y}" r="${RADIUS + 4}"/>`)
 
     const dates = commit.firstDate && commit.firstDate !== commit.date ? `${commit.firstDate} – ${commit.date}` : commit.date
     const meta = `${commit.author} · ${dates}`
@@ -138,6 +184,12 @@ const draw = (commits: GraphCommit[], layout: Layout, rows: number, options: Gra
       )
       cursor += drawn + 4
     }
+    for (const start of starts.get(commit.id) ?? []) {
+      if (cursor > pillLimit) break
+      const label = `↳ ${clip(start.name, Math.max(4, Math.floor((pillLimit - cursor) / (CHAR * 0.85)) - 2))}`
+      out.push(`<text class="st f${start.color}" x="${cursor + 2}" y="${y + 4}">${esc(label)}</text>`)
+      cursor += Math.round(label.length * CHAR * 0.85) + 8
+    }
     const room = Math.floor((width - PAD - metaWidth - 12 - cursor) / CHAR)
     out.push(
       `<text class="${commit.count ? 'dim' : 'fg'}" x="${cursor + 2}" y="${y + 4}">${esc(clip(commit.subject, room))}</text>`,
@@ -145,7 +197,6 @@ const draw = (commits: GraphCommit[], layout: Layout, rows: number, options: Gra
       '</g>',
     )
   }
-
   out.push('</svg>')
   return out.join('')
 }

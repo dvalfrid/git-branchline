@@ -151,3 +151,16 @@ Steg 1–8 klara och provade. Kvar: steg 9 (dela), om Daniel vill.
   bort dem efter bekräftelse, en i taget, och säger vilka git vägrade.
   Resultatet visas överst i fliken, och panelen läser om repot efteråt. HEAD
   och basgrenen kan inte tas bort härifrån.
+- 2026-11-19: grafen färgas per **gren**, inte per bana (`hooks/core/owners.ts`).
+  Varje commit tillhör den första gren som når den längs första föräldern:
+  basgrenen först, sedan HEAD:s gren, sedan övriga uppifrån. Commits som ingen
+  gren når (en sammanslagen och borttagen gren) får namn ur merge-commitens
+  meddelande ("Merge branch 'x'", "Merge pull request #n from x"). En
+  first-parent-kant hör till barnets gren, en merge-kant till grenen den tar
+  in. Basen är grå, övriga får färgerna i tur och ordning, och samma färg
+  används i terminalgrafen och för pricken i fliken Branches. Hovring över en
+  grens linje eller prick tonar ned de andra och visar grenens namn. Där en
+  gren börjar står `↳ namn` i dess färg på raden.
+- 2026-11-19: panelen öppnas bara när en yta är ansluten: vid sessionsstart om
+  någon finns, annars när den första ansluter (`session.attach`), en gång per
+  laddning. Tidigare gav en session utan ansluten app felet `no-surface`.
