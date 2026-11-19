@@ -87,19 +87,31 @@ test('the pane shows the branches in groups, on every surface', async ($, on) =>
     expect(headline?.text).toContain('HEAD `main`')
     expect(headline?.text).toContain('compared with `origin/main`')
 
+    // The Graph tab first: the graph where the surface draws SVG.
+    expect((await ui.find({ key: 'tab-graph' }))?.props.variant).toBe('primary')
     const svg = await ui.find({ type: 'Svg' })
     expect(svg !== undefined).toBe(surface === 'desktop' || surface === 'vscode')
     // Drawn at the pane's width (80 cells, less padding) and its full height, never scaled.
     if (svg) expect([svg.props.width, svg.props.height]).toEqual([624, 2 * 24])
 
-    // Groups in order; old local branches start folded away.
-    const headers = (await ui.findAll({ type: 'Button' })).map(button => button.text).filter(text => /\(\d+\)$/.test(text))
+    // The Branches tab: groups in order, old local branches folded away.
+    await ui.press({ key: 'tab-branches' })
+    expect((await ui.find({ key: 'tab-branches' }))?.text).toBe('Branches (4)')
+    const headers = (await ui.findAll({ type: 'Button' })).map(button => button.text).filter(text => /^[▾▸]/.test(text))
     expect(headers).toEqual(['▾ Active (2)', '▾ Remote only (1)', '▸ Old local (1)'])
-    const tables = (await ui.findAll({ type: 'Markdown', text: /\| Branch \|/ })).map(table => table.text.split('\n').slice(2))
-    expect(tables).toEqual([
-      [`| **\`main\`** | ${MAIN_DATE} | – | – | HEAD · base |`, `| \`feature/x\` | ${FEATURE_DATE} | 1 | 2 | open |`],
-      [`| \`origin/cms\` | ${CMS_DATE} | 5 | 0 | merged · remote only |`],
-    ])
+
+    if (surface === 'terminal') {
+      // No SVG there: the groups are Markdown tables.
+      const tables = (await ui.findAll({ type: 'Markdown', text: /\| Branch \|/ })).map(table => table.text.split('\n').slice(2))
+      expect(tables).toEqual([
+        [`| **\`main\`** | ${MAIN_DATE} | – | – | HEAD · base |`, `| \`feature/x\` | ${FEATURE_DATE} | 1 | 2 | open |`],
+        [`| \`origin/cms\` | ${CMS_DATE} | 5 | 0 | merged · remote only |`],
+      ])
+    } else {
+      const lists = (await ui.findAll({ type: 'Svg' })).map(list => (list.props as { alt: string }).alt)
+      expect(lists).toEqual(['2 branches: main (base), feature/x (open).', '1 branch: origin/cms (merged).'])
+    }
+    await ui.press({ key: 'tab-graph' })
     await ui.unmount()
   }
 })
@@ -110,18 +122,18 @@ test('a group header folds its branches away and back', async ($, on) => {
   on('process.run', (_, e) => ({ value: fakeGit(e.argv) }))
   await $.command.run({ command: 'branchline' })
   const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
-  const tableWith = (name: string) => ui.find({ type: 'Markdown', text: new RegExp(`\`${name}\``) })
+  await ui.press({ key: 'tab-branches' })
+  const lists = async () => (await ui.findAll({ type: 'Svg' })).map(list => (list.props as { alt: string }).alt)
 
-  expect(await tableWith('old')).toBeUndefined()
+  expect(await lists()).toHaveLength(2)
   await ui.press({ key: 'toggle-old' })
-  expect((await tableWith('old'))?.text).toContain('| stale |')
+  expect((await lists())[2]).toBe('1 branch: old (stale).')
 
   await ui.press({ key: 'toggle-active' })
-  expect(await tableWith('feature/x')).toBeUndefined()
+  expect((await lists()).some(alt => alt.includes('feature/x'))).toBe(false)
   expect((await ui.find({ key: 'toggle-active' }))?.text).toBe('▸ Active (2)')
   await ui.unmount()
 })
-
 test('a folder outside git says so', async ($, on) => {
   on('command.register', () => ({ value: { command: 'branchline' } }))
   on('ui.open', () => ({ value: { isPlaced: true } }))

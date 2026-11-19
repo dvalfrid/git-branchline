@@ -32,6 +32,9 @@ export type Branch = {
 
 export type FoldMode = 'auto' | 'fold' | 'expand'
 
+/** The pane's tabs. */
+export type View = 'graph' | 'branches'
+
 export type Tag = { name: string; sha: string }
 
 export type Commit = {
@@ -69,6 +72,8 @@ declare module 'claude-code' {
       foldMode: FoldMode
       /** Branch groups the person has folded away in the table. */
       hiddenGroups: BranchGroup[]
+      /** The tab the pane shows. */
+      view: View
     }
   }
 }

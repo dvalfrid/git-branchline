@@ -115,3 +115,12 @@ Steg 6 klart: panelen uppdateras av sig själv, och grafen går att skrolla i et
   med ett tomrum ovanför. En lokal gren och dess `origin/`-kopia på samma
   commit visas som ett piller (`main ⇅`). Piller som skulle gå in i författare
   och datum ersätts med `+N`.
+- 2026-11-19: panelen har två flikar, **Graph** och **Branches (N)**, som
+  knappar under rubrikraden (vald flik som `primary`). Valet gäller sessionen
+  (`view` i `$.state`). Grenarna ritas som SVG per grupp
+  (`hooks/core/branches-svg.ts`): en prick i grenens färg i grafen, namnet
+  (HEAD som piller, `⇅` när grenen också finns på en remote), ålder i ord
+  ("3 days ago"), en stapel för efter (grå, åt vänster) och före (grenens
+  färg, åt höger) med logaritmisk längd, och ett färgat statuschip. Hovring
+  visar sha, datum, uppströmsgren och före/efter. I terminalen, som saknar
+  `Svg`, är grupperna kvar som Markdown-tabeller.
