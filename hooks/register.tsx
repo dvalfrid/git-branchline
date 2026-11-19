@@ -116,14 +116,32 @@ const watch = ($: EngineInterface): Watcher =>
     () => refresh($),
   ))
 
+// The pane opens by itself once per load: at session start when a surface is
+// there, else when the first one attaches (the desktop app may connect after
+// the session has started). Opening with none attached is refused.
+let hasOpened = false
+const openPane = async ($: EngineInterface): Promise<void> => {
+  if (hasOpened || (await $.session.surfaces()).length === 0) return
+  hasOpened = true
+  await $.ui.open({ id: PANE, title: TITLE }).catch(() => {
+    hasOpened = false
+  })
+}
+
 export const register: Register = on => {
+  on('session.attach', async ($, e, next) => {
+    const attached = await next(e)
+    void openPane($)
+    return attached
+  })
   on('session.start', async ($, e, next) => {
     await $.command.register({
       name: 'branchline',
       description: "Show the Git history of this session's repo in a pane",
     })
-    void $.ui.open({ id: PANE, title: TITLE })
+    void openPane($)
     void watch($).check(true)
+
     $.clock.every(POLL_MS, () => void watch($).check())
 
     return next(e)

@@ -381,3 +381,31 @@ test('Old local deletes its merged branches together, and says what git refused'
   )
   await ui.unmount()
 })
+
+test('with no surface yet, the pane opens when one attaches instead of failing', async ($, on) => {
+  let surfaces: string[] = []
+  const opened: string[] = []
+  on('command.register', () => ({ value: { command: 'branchline' } }))
+  on('session.surfaces', () => ({ value: surfaces }))
+  on('ui.open', (_, e) => {
+    opened.push(e.id)
+    return { value: { isPlaced: true } }
+  })
+  on('session.start', (_, e) => ({ cwd: e.cwd }))
+  on('session.attach', (_, e) => ({ clientId: e.clientId }))
+  on('process.run', (_, e) => ({ value: fakeGit(e.argv) }))
+
+  await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
+  await settle()
+  expect(opened).toEqual([])
+
+  surfaces = ['desktop']
+  await $.session.attach({ surface: 'desktop', clientId: 'desktop:default' })
+  await settle()
+  expect(opened).toEqual(['branchline'])
+
+  // A second client (a phone) does not reopen a pane the person may have closed.
+  await $.session.attach({ surface: 'mobile', clientId: 'mobile:default' })
+  await settle()
+  expect(opened).toEqual(['branchline'])
+})
