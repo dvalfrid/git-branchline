@@ -2,7 +2,7 @@
 
 ## Nu / Next
 
-Steg 7 är skrivet och testat (39 av 39). Kvar: prova i en terminal. Sedan steg 9 (dela), om Daniel vill.
+Steg 1–8 klara och provade. Kvar: steg 9 (dela), om Daniel vill.
 
 ## Steg
 
@@ -19,7 +19,7 @@ Steg 7 är skrivet och testat (39 av 39). Kvar: prova i en terminal. Sedan steg 
 - [x] **5. Komprimera** commitföljder utan refs (valbart).
 - [x] **6. Levande uppdatering**: `tool.call`-hook för git-kommandon och
       polling av HEAD/refs-hash via `$.clock.every`.
-- [ ] **7. Terminalreserv**: textgraf för `surface === 'terminal'`.
+- [x] **7. Terminalreserv**: textgraf för `surface === 'terminal'`.
 - [x] **8. Interaktion** (senare): klick på en commit visar diffstat, klick på
       en gren frågar Claude om den ("ska den här slås ihop?") via `sendPrompt`
       eller motsvarande i API:t.
