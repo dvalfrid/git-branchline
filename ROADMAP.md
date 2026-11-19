@@ -2,8 +2,7 @@
 
 ## Nu / Next
 
-Steg 4 är skrivet och testat (19 av 19), förhandsgranskat i ljust och mörkt läge.
-Kvar: se grafen i panelen i desktopappen. Sedan steg 5, komprimering.
+Steg 4 klart, grafen syns i desktopappen. Nästa: steg 5, komprimering.
 
 ## Steg
 
@@ -16,7 +15,7 @@ Kvar: se grafen i panelen i desktopappen. Sedan steg 5, komprimering.
       datum, efter/före main, status).
 - [x] **3. Banlayout**: räkna ut banor automatiskt och testa mot ett fall med
       merge-commits (två föräldrar) och grenar som gått ihop.
-- [ ] **4. SVG-graf på desktop**: prickar, kanter, ref-piller, HEAD markerad.
+- [x] **4. SVG-graf på desktop**: prickar, kanter, ref-piller, HEAD markerad.
 - [ ] **5. Komprimera** commitföljder utan refs (valbart).
 - [ ] **6. Levande uppdatering**: `tool.call`-hook för git-kommandon och
       polling av HEAD/refs-hash via `$.clock.every`.
