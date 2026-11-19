@@ -25,7 +25,12 @@ type Git = (...args: string[]) => Promise<RunResult>
 /** How many commits to read for the graph. */
 export const COMMIT_LIMIT = 200
 
-export const readRepo = async (run: Run, now: Date): Promise<Snapshot> => {
+export type ReadOptions = {
+  /** Also commits only a tag keeps (`git log --all`); by default only what branches and HEAD reach. */
+  includeTagOnly?: boolean
+}
+
+export const readRepo = async (run: Run, now: Date, options: ReadOptions = {}): Promise<Snapshot> => {
   const top = await run(['git', 'rev-parse', '--show-toplevel'])
   if (top.exitCode !== 0) return { state: 'not-repo' }
   const root = top.stdout.trim()
@@ -39,9 +44,10 @@ export const readRepo = async (run: Run, now: Date): Promise<Snapshot> => {
   const originHead = originHeadOut.exitCode === 0 ? originHeadOut.stdout.trim() || undefined : undefined
   const defaultName = defaultBranch(refs, originHead)
 
+  const reach = options.includeTagOnly ? ['--all'] : ['--branches', '--remotes', 'HEAD']
   const logOut = await git(
     'log',
-    '--all',
+    ...reach,
     '--date-order',
     '-n',
     String(COMMIT_LIMIT),

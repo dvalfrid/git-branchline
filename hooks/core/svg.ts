@@ -128,7 +128,7 @@ const draw = (commits: GraphCommit[], layout: Layout, rows: number, options: Gra
   out.push('<g class="bs">')
   for (const [key, { edges, dots }] of parts) {
     const owner = key >= 0 ? owners?.owners[key] : undefined
-    const title = owner ? `<title>${esc(owner.isMerged ? `${owner.name} (merged)` : owner.name)}</title>` : ''
+    const title = owner ? `<title>${esc(owner.isTagOnly ? `${owner.name} (tag only, on no branch)` : owner.isMerged ? `${owner.name} (merged)` : owner.name)}</title>` : ''
     out.push(`<g class="b">${title}<g fill="none" stroke-width="2" stroke-linecap="round">${edges.join('')}</g>${dots.join('')}</g>`)
   }
   out.push('</g>')

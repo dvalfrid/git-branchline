@@ -70,3 +70,27 @@ test('a merged and deleted branch is named from its merge commit', () => {
 test('decorations give branch names, not tags or HEAD', () => {
   expect(branchNames(['HEAD -> main', 'origin/main', 'origin/HEAD', 'tag: v1', 'feat'])).toEqual(['main', 'origin/main', 'feat'])
 })
+
+test('commits only a tag keeps are named after the tag; what they merge in, after the pull request', () => {
+  // The rig-dashboard case: test builds tagged on merges of main and #726, on no branch.
+  const commits = [
+    c('m3', 'm2', 'M3', 'HEAD -> main, origin/main'),
+    c('rc2', 'm2 pr', 'chore(rc): main with #726 for the G14 test (rc.2)', 'tag: v1.54.0-rc.2'),
+    c('m2', 'm1', 'M2'),
+    c('rc1', 'm1 pr', 'chore(rc): main with #726 for the G14 test', 'tag: v1.54.0-rc.1'),
+    c('pr', 'm1', 'fix(control): write the lighting again'),
+    c('m1', '', 'M1'),
+  ]
+  const { owners, ownerOf } = assignOwners(commits, 'main')
+  const nameOf = (id: string) => {
+    const owner = owners[ownerOf.get(id)!]!
+    return `${owner.name}${owner.isTagOnly ? ' (tag only)' : owner.isMerged ? ' (merged)' : ''}`
+  }
+  expect(['m3', 'rc2', 'rc1', 'pr', 'm1'].map(nameOf)).toEqual([
+    'main',
+    'v1.54.0-rc.2 (tag only)',
+    'v1.54.0-rc.1 (tag only)',
+    '#726 (merged)',
+    'main',
+  ])
+})

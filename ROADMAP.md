@@ -164,3 +164,12 @@ Steg 1–8 klara och provade. Kvar: steg 9 (dela), om Daniel vill.
 - 2026-11-19: panelen öppnas bara när en yta är ansluten: vid sessionsstart om
   någon finns, annars när den första ansluter (`session.attach`), en gång per
   laddning. Tidigare gav en session utan ansluten app felet `no-surface`.
+- 2026-11-19: grafen läser som standard bara det grenar, remote-grenar och
+  HEAD når (`git log --branches --remotes HEAD`), inte `--all`. Commits som
+  bara en tagg håller vid liv (i rig-dashboard: testbyggena `v1.54.0-rc.1–5`,
+  merge-commits av main och #726 som aldrig hamnade på någon gren) syns inte
+  förrän man trycker **Show tag-only commits**. Taggar på commits som finns på
+  grenar syns som förut. Med knappen på får sådana linjer taggens namn ("…
+  (tag only, on no branch)" vid hovring), och en commit som en merge tagit in
+  utan grennamn i meddelandet får pull requestens nummer (`#726`) i stället
+  för "merged branch".

@@ -97,6 +97,8 @@ declare module 'claude-code' {
       hiddenGroups: BranchGroup[]
       /** The tab the pane shows. */
       view: View
+      /** Whether the graph also shows commits only a tag keeps. */
+      showTagOnly: boolean
       /** The branch opened in the Branches tab, with what was read for it. */
       opened: Shaped<BranchDetails | null>
       /** Local branches waiting for a second press to be deleted. */

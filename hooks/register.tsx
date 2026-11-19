@@ -77,6 +77,9 @@ const runDelete = async ($: EngineInterface, root: string, names: string[]): Pro
   await watch($).check(true)
 }
 
+// Commits only a tag keeps (test builds, deleted branches) are left out unless asked for.
+const showTagOnly = atom({ plugin: 'git-branchline', key: 'showTagOnly' } as const, false)
+
 // Which tab the pane shows.
 const view = atom({ plugin: 'git-branchline', key: 'view' } as const, 'graph' as View)
 
@@ -101,7 +104,7 @@ const rowsThatFit = (bodyRows: number): number => Math.floor((bodyRows * PX_PER_
 const refresh = async ($: EngineInterface): Promise<void> => {
   let next: Snapshot
   try {
-    next = await readRepo(argv => $.process.run(argv), new Date())
+    next = await readRepo(argv => $.process.run(argv), new Date(), { includeTagOnly: await read($, showTagOnly) })
   } catch (error) {
     next = { state: 'error', message: error instanceof Error ? error.message : String(error) }
   }
@@ -176,6 +179,7 @@ export const register: Register = on => {
     const mode = await read($, foldMode)
     const hidden = await read($, hiddenGroups)
     const tab = await read($, view)
+    const tagOnly = await read($, showTagOnly)
     const opened = await read($, openedBranch)
     const pending = await read($, pendingDelete)
     const notice = await read($, noticeAtom)
@@ -225,10 +229,23 @@ export const register: Register = on => {
       const canFold = folded
         ? rows.length < shot.commits.length
         : compactCommits(shot.commits).length < shot.commits.length
-      const foldButton = canFold && (
-        <Button key="compact" dimColor onPress={() => void update($, foldMode, () => (folded ? 'expand' : 'fold'))}>
-          {folded ? 'Show every commit' : 'Fold quiet stretches'}
-        </Button>
+      const foldButton = (
+        <Box flexDirection="row" flexWrap="wrap" columnGap={1}>
+          {canFold && (
+            <Button key="compact" dimColor onPress={() => void update($, foldMode, () => (folded ? 'expand' : 'fold'))}>
+              {folded ? 'Show every commit' : 'Fold quiet stretches'}
+            </Button>
+          )}
+          <Button
+            key="tag-only"
+            dimColor
+            onPress={() =>
+              void update($, showTagOnly, value => !value).then(() => watch($).check(true))
+            }
+          >
+            {tagOnly ? 'Hide tag-only commits' : 'Show tag-only commits'}
+          </Button>
+        </Box>
       )
 
       if (e.surface === 'terminal' || !Svg) {

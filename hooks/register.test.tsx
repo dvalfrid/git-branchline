@@ -409,3 +409,23 @@ test('with no surface yet, the pane opens when one attaches instead of failing',
   await settle()
   expect(opened).toEqual(['branchline'])
 })
+
+test('the graph reads branch history only, until tag-only commits are asked for', async ($, on) => {
+  const logs: string[] = []
+  on('command.register', () => ({ value: { command: 'branchline' } }))
+  on('ui.open', () => ({ value: { isPlaced: true } }))
+  on('process.run', (_, e) => {
+    if (e.argv.includes('log') && e.argv.some(arg => arg.startsWith('--format=%h%x1f%p'))) logs.push(e.argv.join(' '))
+    return { value: fakeGit(e.argv) }
+  })
+  await $.command.run({ command: 'branchline' })
+  expect(logs.at(-1)).toContain(' log --branches --remotes HEAD ')
+  expect(logs.at(-1)).not.toContain('--all')
+
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  await ui.press({ key: 'tag-only' })
+  await settle()
+  expect(logs.at(-1)).toContain(' log --all ')
+  expect((await ui.find({ key: 'tag-only' }))?.text).toBe('Hide tag-only commits')
+  await ui.unmount()
+})
