@@ -2,8 +2,7 @@
 
 ## Nu / Next
 
-Steg 6 är skrivet och testat (29 av 29). Kvar: se att panelen uppdateras av sig
-själv i desktopappen. Sedan steg 7, terminalreserven.
+Steg 6 klart: panelen uppdateras av sig själv, och grafen går att skrolla i ett stort repo (rig-dashboard). Nästa: steg 7, terminalreserven.
 
 ## Steg
 
@@ -18,7 +17,7 @@ själv i desktopappen. Sedan steg 7, terminalreserven.
       merge-commits (två föräldrar) och grenar som gått ihop.
 - [x] **4. SVG-graf på desktop**: prickar, kanter, ref-piller, HEAD markerad.
 - [x] **5. Komprimera** commitföljder utan refs (valbart).
-- [ ] **6. Levande uppdatering**: `tool.call`-hook för git-kommandon och
+- [x] **6. Levande uppdatering**: `tool.call`-hook för git-kommandon och
       polling av HEAD/refs-hash via `$.clock.every`.
 - [ ] **7. Terminalreserv**: textgraf för `surface === 'terminal'`.
 - [ ] **8. Interaktion** (senare): klick på en commit visar diffstat, klick på
@@ -34,6 +33,9 @@ själv i desktopappen. Sedan steg 7, terminalreserven.
 
 - Fälla ut en enskild ihopslagen grupp med ett klick: dela grafen i SVG-bitar
   runt varje grupp och lägg en knapp på gruppens rad? Prova om det ser bra ut.
+
+- Grafen visar högst 150 rader. Behövs en knapp "Visa fler" för att gå längre
+  bakåt i stora repon?
 
 ## Beslut
 
