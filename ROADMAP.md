@@ -2,7 +2,7 @@
 
 ## Nu / Next
 
-Steg 8 är skrivet och testat (36 av 36) för grenlistan. Kvar: prova i appen. Sedan steg 7 (terminalen) eller 9 (dela).
+Steg 8 klart, provat i appen. Kvar: steg 7 (terminalen) och 9 (dela).
 
 ## Steg
 
@@ -20,7 +20,7 @@ Steg 8 är skrivet och testat (36 av 36) för grenlistan. Kvar: prova i appen. S
 - [x] **6. Levande uppdatering**: `tool.call`-hook för git-kommandon och
       polling av HEAD/refs-hash via `$.clock.every`.
 - [ ] **7. Terminalreserv**: textgraf för `surface === 'terminal'`.
-- [ ] **8. Interaktion** (senare): klick på en commit visar diffstat, klick på
+- [x] **8. Interaktion** (senare): klick på en commit visar diffstat, klick på
       en gren frågar Claude om den ("ska den här slås ihop?") via `sendPrompt`
       eller motsvarande i API:t.
 - [ ] **9. Dela**: marketplace.json och README-installationsrad, om Daniel vill.
