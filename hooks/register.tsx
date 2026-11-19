@@ -1,7 +1,29 @@
-import type { Register } from 'claude-code'
+import { atom, read, update } from 'claude-code'
+import type { EngineInterface, Register } from 'claude-code'
+
+import type { Snapshot } from '../types'
+import { branchTable, headline } from './core/table'
+import { readRepo } from './repo'
 
 const PANE = 'branchline'
 const TITLE = 'Branchline'
+const LOADING: Snapshot = { state: 'loading' }
+
+// Change the shape tag whenever Snapshot's fields change: it declines what an
+// earlier version stored, which outlives a reload.
+const snapshot = atom({ plugin: 'git-branchline', key: 'snapshot' } as const, LOADING, {
+  shape: 'snapshot-1',
+})
+
+const refresh = async ($: EngineInterface): Promise<void> => {
+  let next: Snapshot
+  try {
+    next = await readRepo(argv => $.process.run(argv), new Date())
+  } catch (error) {
+    next = { state: 'error', message: error instanceof Error ? error.message : String(error) }
+  }
+  await update($, snapshot, () => next)
+}
 
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
@@ -10,23 +32,30 @@ export const register: Register = on => {
       description: "Show the Git history of this session's repo in a pane",
     })
     void $.ui.open({ id: PANE, title: TITLE })
+    void refresh($)
 
     return next(e)
   })
 
   on('command.run', { command: 'branchline' }, async $ => {
     await $.ui.open({ id: PANE, title: TITLE })
+    await refresh($)
 
-    return { text: 'Branchline pane opened.' }
+    return { text: 'Branchline updated.' }
   })
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
-    const { Box, Text } = $.ui.resolve(e)
+    const { Box, Text, Markdown } = $.ui.resolve(e)
+    const shot = await read($, snapshot)
+
+    if (shot.state === 'loading') return <Text dimColor>Reading the repository…</Text>
+    if (shot.state === 'not-repo') return <Text>This session's folder is not a Git repository.</Text>
+    if (shot.state === 'error') return <Text>git failed: {shot.message}</Text>
 
     return (
-      <Box flexDirection="column">
-        <Text bold>Branchline</Text>
-        <Text dimColor>The Git graph will appear here.</Text>
+      <Box flexDirection="column" gap={1}>
+        <Markdown text={headline(shot)} />
+        <Markdown text={branchTable(shot.branches)} />
       </Box>
     )
   })

@@ -2,7 +2,7 @@
 
 ## Nu / Next
 
-Steg 1 klart. Nästa: steg 2, läsa repot och visa grentabellen.
+Steg 2 är skrivet och testat (claude plugin test: 8 av 8). Kvar: se grentabellen i\npanelen i desktopappen. Sedan steg 3, banlayouten.
 
 ## Steg
 
@@ -41,3 +41,11 @@ Steg 1 klart. Nästa: steg 2, läsa repot och visa grentabellen.
 - 2026-11-19: steg 1 bekräftat, panelen syns i desktopappen. Efter en ändring
   av `CLAUDE_CODE_PLUGIN_DIRS` måste desktopappen avslutas helt och startas om;
   en ny session med + räcker inte.
+- 2026-11-19, steg 2: grenarna jämförs med `origin/<förvald gren>` om den finns,
+  annars den lokala förvalda grenen (från `origin/HEAD`, annars main, master,
+  annars HEAD). Före/efter läses med `%(ahead-behind:…)` i ett anrop (git 2.41+),
+  annars en `rev-list` per gren. Status: `base`, `merged` (inga egna commits),
+  `stale` (äldre än 90 dagar), annars `open`; HEAD visas för sig. Fjärrgrenar
+  visas bara när ingen lokal gren följer eller speglar dem. Tabellen ritas som
+  Markdown, som fungerar på alla ytor. Ren logik ligger i `hooks/core/` (utan
+  `$`) så att den kan återanvändas, till exempel i en MCP-server.

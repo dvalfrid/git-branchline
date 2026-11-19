@@ -36,6 +36,8 @@ git-branchline/
   hooks/register.tsx           export const register: Register = (on, options) => { … }
   types/index.d.ts             kontraktet för värden i $.state (interface PluginState)
   hooks/*.test.tsx             tester, körs med `claude plugin test .`
+  hooks/core/*.ts              ren logik utan $ (parsning, layout, text), återanvändbar
+  hooks/repo.ts                läser repot med git via en run-funktion
 ```
 
 - Varje hook är `($, e, next)`. `$` är motorns gränssnitt (det finns ingen DOM

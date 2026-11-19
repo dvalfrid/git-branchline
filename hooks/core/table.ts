@@ -1,0 +1,49 @@
+// Turns a snapshot into text for the pane. Pure, like git.ts.
+
+import type { Branch, Snapshot } from '../../types'
+
+type Ok = Extract<Snapshot, { state: 'ok' }>
+
+export const headline = (snapshot: Ok): string => {
+  const repo = snapshot.root.split(/[\\/]/).filter(Boolean).pop() ?? snapshot.root
+  const parts = [`**${escape(repo)}**`, `HEAD ${code(snapshot.head)}`]
+  if (snapshot.base) parts.push(`compared with ${code(snapshot.base)}`)
+  parts.push(`read ${snapshot.readAt}`)
+  return parts.join(' · ')
+}
+
+/** The branch table as markdown, or a sentence when there are no branches. */
+export const branchTable = (branches: Branch[]): string => {
+  if (branches.length === 0) return '_No branches yet._'
+  const rows = branches.map(
+    branch => `| ${[name(branch), branch.date, count(branch, 'behind'), count(branch, 'ahead'), status(branch)].join(' | ')} |`,
+  )
+  return ['| Branch | Last commit | Behind | Ahead | Status |', '|---|---|--:|--:|---|', ...rows].join('\n')
+}
+
+export const STATUS_LABEL: Record<Branch['status'], string> = {
+  base: 'base',
+  open: 'open',
+  merged: 'merged',
+  stale: 'stale',
+}
+
+const code = (text: string): string => '`' + text.replace(/`/g, "'").replace(/\|/g, '\\|') + '`'
+
+const name = (branch: Branch): string => (branch.isHead ? `**${code(branch.name)}**` : code(branch.name))
+
+const count = (branch: Branch, which: 'ahead' | 'behind'): string => {
+  if (branch.status === 'base') return '–'
+  const value = branch[which]
+  return value === undefined ? '?' : String(value)
+}
+
+const status = (branch: Branch): string => {
+  const parts: string[] = []
+  if (branch.isHead) parts.push('HEAD')
+  parts.push(STATUS_LABEL[branch.status])
+  if (branch.kind === 'remote') parts.push('remote only')
+  return parts.join(' · ')
+}
+
+const escape = (text: string): string => text.replace(/([\\`*_|[\]])/g, '\\$1')
