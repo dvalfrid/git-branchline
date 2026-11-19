@@ -77,6 +77,9 @@ test('the pane shows the branch table, on every surface', async ($, on) => {
     expect(headline?.text).toContain('HEAD `main`')
     expect(headline?.text).toContain('compared with `origin/main`')
 
+    const svg = await ui.find({ type: 'Svg' })
+    expect(svg !== undefined).toBe(surface === 'desktop' || surface === 'vscode')
+
     const table = (await ui.find({ type: 'Markdown', text: /\| Branch \|/ }))?.text ?? ''
     const lines = table.split('\n').slice(2)
     expect(lines).toEqual([

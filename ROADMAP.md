@@ -2,7 +2,8 @@
 
 ## Nu / Next
 
-Steg 3 klart (banlayouten, testad). Nästa: steg 4, SVG-grafen på desktop.
+Steg 4 är skrivet och testat (19 av 19), förhandsgranskat i ljust och mörkt läge.
+Kvar: se grafen i panelen i desktopappen. Sedan steg 5, komprimering.
 
 ## Steg
 
@@ -57,3 +58,11 @@ Steg 3 klart (banlayouten, testad). Nästa: steg 4, SVG-grafen på desktop.
   direkt efter barnet och en vid föräldern. En förälder nedanför de 200
   commitarna ger en öppen kant (`to` saknas). Testat mot en riktig historik
   med två merges och en gren från en gren, samma form som `git log --graph`.
+- 2026-11-19, steg 4: `hooks/core/svg.ts` ritar grafen som ett enda SVG-dokument
+  (radhöjd 24 px, banbredd 16 px): prickar i banans färg, större prick för
+  commits med refs, en ring runt HEAD, ref-piller (HEAD i varningsfärg, taggar
+  streckade, `origin/`/`upstream/` utan fyllning), ämne och "författare · datum".
+  Färgerna följer ljust/mörkt läge via `prefers-color-scheme`, eftersom SVG:n
+  visas som bild och inte ärver textfärg. Högst 150 rader, och färre om källan
+  annars blir längre än 131 072 tecken. Grafen ritas på `desktop` och `vscode`;
+  terminal och mobil visar bara grentabellen än så länge.
