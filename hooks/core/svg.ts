@@ -28,6 +28,7 @@ const STYLE = [
   '.head{fill:#FAEEDA;stroke:#BA7517}.ht{fill:#633806;font-weight:600;font-size:10.5px}',
   '.tag{fill:none;stroke:#888780;stroke-dasharray:2 2}.rem{fill:none}',
   '.ring{fill:none;stroke:#BA7517;stroke-width:2}',
+  '.hit{fill:transparent}.r:hover .hit{fill:#88878026}',
   ...LANE_COLORS.map((color, i) => `.s${i}{stroke:${color}}.f${i}{fill:${color}}`),
   '@media (prefers-color-scheme:dark){',
   '.fg{fill:#e8e6dc}.dim{fill:#a3a19a}',
@@ -93,6 +94,10 @@ const draw = (commits: GraphCommit[], layout: Layout, rows: number, options: Gra
     const x = laneX(row.lane)
     const y = rowY(row.row)
     const hasRefs = commit.refs.length > 0
+    out.push(
+      `<g class="r"><title>${esc(tooltip(commit))}</title>`,
+      `<rect class="hit" x="0" y="${row.row * ROW}" width="${width}" height="${ROW}"/>`,
+    )
     if (commit.count) {
       // A folded chain: a square instead of a dot.
       const side = RADIUS * 2 + 2
@@ -120,6 +125,7 @@ const draw = (commits: GraphCommit[], layout: Layout, rows: number, options: Gra
     out.push(
       `<text class="${commit.count ? 'dim' : 'fg'}" x="${cursor + 2}" y="${y + 4}">${esc(clip(commit.subject, room))}</text>`,
       `<text class="dim" x="${width - PAD}" y="${y + 4}" text-anchor="end">${esc(meta)}</text>`,
+      '</g>',
     )
   }
 
@@ -167,6 +173,18 @@ export const edgePath = (
 
 /** Ref prefixes drawn as remote branches. */
 export const REMOTES = ['origin', 'upstream']
+
+/** Tooltip lines shown on hover: one line per commit, folded rows listing theirs. */
+export const TOOLTIP_LINES = 30
+
+export const tooltip = (commit: GraphCommit): string => {
+  const line = (c: { id: string; date: string; author: string; subject: string }) =>
+    `${c.id}  ${c.date}  ${c.author}: ${c.subject}`
+  if (!commit.members) return [line(commit), ...commit.refs.map(ref => `  ${ref}`)].join('\n')
+  const shown = commit.members.slice(0, TOOLTIP_LINES).map(line)
+  const rest = commit.members.length - shown.length
+  return [`${commit.members.length} commits (show every commit with the button below)`, ...shown, ...(rest > 0 ? [`… and ${rest} more`] : [])].join('\n')
+}
 
 export type Pill = { text: string; kind: 'head' | 'branch' | 'remote' | 'tag' }
 

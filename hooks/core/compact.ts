@@ -13,6 +13,8 @@ export type GraphCommit = Commit & {
   count?: number
   /** For a folded row, the date of its oldest commit. */
   firstDate?: string
+  /** For a folded row, the commits it stands for, newest first. */
+  members?: Commit[]
 }
 
 export const compactCommits = (commits: Commit[], minRun = MIN_RUN): GraphCommit[] => {
@@ -50,6 +52,7 @@ export const compactCommits = (commits: Commit[], minRun = MIN_RUN): GraphCommit
       refs: [],
       subject: `${chain.length} commits`,
       count: chain.length,
+      members: chain,
     })
   }
   return out

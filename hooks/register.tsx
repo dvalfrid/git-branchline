@@ -71,7 +71,7 @@ export const register: Register = on => {
     return (
       <Box flexDirection="column" gap={1}>
         <Markdown text={headline(shot)} />
-        {graph && Svg && <Svg source={graph.source} alt={graph.alt} />}
+        {graph && Svg && <Svg source={graph.source} alt={graph.alt} isInteractive />}
         {graph && folds && (
           <Button key="compact" dimColor onPress={() => void update($, isCompact, value => !value)}>
             {compact ? 'Show every commit' : 'Fold quiet stretches'}

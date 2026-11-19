@@ -2,7 +2,7 @@
 
 ## Nu / Next
 
-Steg 5 är skrivet och testat (24 av 24). Kvar: se ihopslagna rader och knappen
+Steg 5 är skrivet och testat (25 av 25), med hovring. Kvar: se ihopslagna rader och knappen
 i panelen. Sedan steg 6, levande uppdatering.
 
 ## Steg
@@ -31,6 +31,9 @@ i panelen. Sedan steg 6, levande uppdatering.
 - Ska grenar som är helt sammanslagna i main döljas som standard?
 - Hur många commits bakåt (200?) och hur långt bakåt i tid för gamla grenar?
 - Automatisk `git fetch`: av som standard. Slå på via `userConfig`?
+
+- Fälla ut en enskild ihopslagen grupp med ett klick: dela grafen i SVG-bitar
+  runt varje grupp och lägg en knapp på gruppens rad? Prova om det ser bra ut.
 
 ## Beslut
 
@@ -73,3 +76,10 @@ i panelen. Sedan steg 6, levande uppdatering.
   en fyrkant. Rotcommiten slås aldrig ihop. Komprimeringen är på som standard
   och slås av och på med en knapp under grafen ("Show every commit" / "Fold
   quiet stretches"); valet gäller sessionen (`isCompact` i `$.state`).
+- 2026-11-19: hovring i grafen. SVG:n ritas med `isInteractive`, och varje rad
+  har en `<title>` (hash, datum, författare, meddelande, refs) och markeras när
+  pekaren är över den. En ihopslagen rad listar sina commits (högst 30). Klick
+  i grafen når inte modden: SVG:n visas i en ram utan skript, `Client`-moduler
+  kan inte rita `Svg`, och en `Button` tar bara text som innehåll. Att fälla ut
+  en enskild grupp genom att klicka på den kräver att grafen delas upp i bitar
+  med en knapp på den ihopslagna raden (se öppna frågor).

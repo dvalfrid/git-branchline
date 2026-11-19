@@ -2,7 +2,8 @@ import { expect, test } from 'claude-code/testing'
 
 import type { Commit } from '../../types'
 import { layoutGraph } from './layout'
-import { MAX_SOURCE, ROW, edgePath, graphSvg, pills } from './svg'
+import { compactCommits } from './compact'
+import { MAX_SOURCE, ROW, edgePath, graphSvg, pills, tooltip } from './svg'
 
 const c = (id: string, parents: string, refs = '', subject = id): Commit => ({
   id,
@@ -54,4 +55,23 @@ test('a long history is cut to fit the source limit', () => {
   expect(graph.source.length).toBeLessThanOrEqual(MAX_SOURCE)
   expect(graph.rows).toBeLessThan(400)
   expect(graph.alt).toContain(`the newest ${graph.rows} of 400 commits`)
+})
+
+test('hovering a row shows its commit, and a folded row lists its commits', () => {
+  const commits = [c('d', 'c', 'HEAD -> main', 'Tip'), c('c', 'b'), c('b', 'a'), c('a', 'z'), c('z', 'y'), c('y', '')]
+  const rows = compactCommits(commits)
+  expect(rows.map(row => row.count ?? 1)).toEqual([1, 4, 1])
+
+  expect(tooltip(rows[0]!)).toBe('d  2026-11-19  Daniel: Tip\n  HEAD -> main')
+  expect(tooltip(rows[1]!).split('\n')).toEqual([
+    '4 commits (show every commit with the button below)',
+    'c  2026-11-19  Daniel: c',
+    'b  2026-11-19  Daniel: b',
+    'a  2026-11-19  Daniel: a',
+    'z  2026-11-19  Daniel: z',
+  ])
+
+  const { source } = graphSvg(rows, layoutGraph(rows, 'd'))
+  expect(source.match(/<g class="r"><title>/g)).toHaveLength(3)
+  expect(source).toContain('&gt;')
 })
