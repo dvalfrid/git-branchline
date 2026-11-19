@@ -2,7 +2,7 @@
 
 ## Nu / Next
 
-Steg 2 är skrivet och testat (claude plugin test: 8 av 8). Kvar: se grentabellen i\npanelen i desktopappen. Sedan steg 3, banlayouten.
+Steg 2 klart, grentabellen syns i desktopappen. Nästa: steg 3, banlayouten.
 
 ## Steg
 
@@ -10,7 +10,7 @@ Steg 2 är skrivet och testat (claude plugin test: 8 av 8). Kvar: se grentabelle
       `register.tsx` som öppnar en tom panel "Branchline" och registrerar
       `/branchline`. Ladda den i desktopappen (se CLAUDE.md) och bekräfta att
       panelen syns.
-- [ ] **2. Läsa repot**: kör git via `$.process.run`, parsa refs och log
+- [x] **2. Läsa repot**: kör git via `$.process.run`, parsa refs och log
       (avgränsare `%x1f`), spara i en atom. Visa först grentabellen (gren,
       datum, efter/före main, status).
 - [ ] **3. Banlayout**: räkna ut banor automatiskt och testa mot ett fall med
