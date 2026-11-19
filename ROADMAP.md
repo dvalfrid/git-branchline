@@ -2,7 +2,8 @@
 
 ## Nu / Next
 
-Steg 4 klart, grafen syns i desktopappen. Nästa: steg 5, komprimering.
+Steg 5 är skrivet och testat (24 av 24). Kvar: se ihopslagna rader och knappen
+i panelen. Sedan steg 6, levande uppdatering.
 
 ## Steg
 
@@ -65,3 +66,10 @@ Steg 4 klart, grafen syns i desktopappen. Nästa: steg 5, komprimering.
   visas som bild och inte ärver textfärg. Högst 150 rader, och färre om källan
   annars blir längre än 131 072 tecken. Grafen ritas på `desktop` och `vscode`;
   terminal och mobil visar bara grentabellen än så länge.
+- 2026-11-19, steg 5: `hooks/core/compact.ts` slår ihop en kedja av minst 4
+  commits som saknar refs, inte är merges och inte har någon gren som utgår
+  från dem (bara den översta får ha flera barn). Raden visar "N commits",
+  författarna (vanligast först, högst tre) och datumintervallet, och ritas som
+  en fyrkant. Rotcommiten slås aldrig ihop. Komprimeringen är på som standard
+  och slås av och på med en knapp under grafen ("Show every commit" / "Fold
+  quiet stretches"); valet gäller sessionen (`isCompact` i `$.state`).

@@ -50,6 +50,10 @@ export type Snapshot =
 
 declare module 'claude-code' {
   interface PluginState {
-    'git-branchline': { snapshot: Shaped<Snapshot> }
+    'git-branchline': {
+      snapshot: Shaped<Snapshot>
+      /** Fold long chains of quiet commits into one row (on by default). */
+      isCompact: boolean
+    }
   }
 }

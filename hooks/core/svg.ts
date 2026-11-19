@@ -2,7 +2,7 @@
 // markup out. Colors follow the light or dark scheme through a media query,
 // since the drawing is shown as an image and inherits no text color.
 
-import type { Commit } from '../../types'
+import type { GraphCommit } from './compact'
 import type { Layout } from './layout'
 
 export const ROW = 24
@@ -51,13 +51,15 @@ export type Graph = { source: string; rows: number; alt: string }
  * The SVG for the first rows of the layout. Rows are dropped until the
  * source fits within MAX_SOURCE.
  */
-export const graphSvg = (commits: Commit[], layout: Layout, options: GraphOptions = {}): Graph => {
+export const graphSvg = (commits: GraphCommit[], layout: Layout, options: GraphOptions = {}): Graph => {
   let rows = Math.min(layout.rows.length, options.maxRows ?? MAX_ROWS)
   for (;;) {
     const source = draw(commits, layout, rows, options)
     if (source.length <= MAX_SOURCE || rows <= 1) {
       const lanes = layout.laneCount === 1 ? '1 lane' : `${layout.laneCount} lanes`
-      const shown = rows < commits.length ? `the newest ${rows} of ${commits.length} commits` : `${rows} commits`
+      const total = commits.reduce((sum, commit) => sum + (commit.count ?? 1), 0)
+      const unit = total === commits.length ? 'commits' : `rows (${total} commits, quiet stretches folded)`
+      const shown = rows < commits.length ? `the newest ${rows} of ${commits.length} ${unit}` : `${rows} ${unit}`
       return { source, rows, alt: `Commit graph: ${shown} on ${lanes}.` }
     }
     rows = Math.floor(rows * 0.8)
@@ -68,7 +70,7 @@ const laneX = (lane: number) => PAD + lane * LANE + LANE / 2
 const rowY = (row: number) => row * ROW + ROW / 2
 const color = (lane: number) => lane % LANE_COLORS.length
 
-const draw = (commits: Commit[], layout: Layout, rows: number, options: GraphOptions): string => {
+const draw = (commits: GraphCommit[], layout: Layout, rows: number, options: GraphOptions): string => {
   const width = options.width ?? WIDTH
   const height = Math.max(rows, 1) * ROW
   const textX = PAD + layout.laneCount * LANE + 8
@@ -91,7 +93,13 @@ const draw = (commits: Commit[], layout: Layout, rows: number, options: GraphOpt
     const x = laneX(row.lane)
     const y = rowY(row.row)
     const hasRefs = commit.refs.length > 0
-    out.push(`<circle class="f${color(row.lane)}" cx="${x}" cy="${y}" r="${hasRefs ? RADIUS + 1 : RADIUS}"/>`)
+    if (commit.count) {
+      // A folded chain: a square instead of a dot.
+      const side = RADIUS * 2 + 2
+      out.push(`<rect class="f${color(row.lane)}" x="${x - side / 2}" y="${y - side / 2}" width="${side}" height="${side}" rx="2"/>`)
+    } else {
+      out.push(`<circle class="f${color(row.lane)}" cx="${x}" cy="${y}" r="${hasRefs ? RADIUS + 1 : RADIUS}"/>`)
+    }
     if (commit.id === options.headId) out.push(`<circle class="ring" cx="${x}" cy="${y}" r="${RADIUS + 4}"/>`)
 
     let cursor = textX
@@ -105,11 +113,12 @@ const draw = (commits: Commit[], layout: Layout, rows: number, options: GraphOpt
       cursor += w + 4
     }
 
-    const meta = `${commit.author} · ${commit.date}`
+    const dates = commit.firstDate && commit.firstDate !== commit.date ? `${commit.firstDate} – ${commit.date}` : commit.date
+    const meta = `${commit.author} · ${dates}`
     const metaWidth = meta.length * CHAR
     const room = Math.floor((width - PAD - metaWidth - 12 - cursor) / CHAR)
     out.push(
-      `<text class="fg" x="${cursor + 2}" y="${y + 4}">${esc(clip(commit.subject, room))}</text>`,
+      `<text class="${commit.count ? 'dim' : 'fg'}" x="${cursor + 2}" y="${y + 4}">${esc(clip(commit.subject, room))}</text>`,
       `<text class="dim" x="${width - PAD}" y="${y + 4}" text-anchor="end">${esc(meta)}</text>`,
     )
   }

@@ -108,3 +108,36 @@ test('before the first read the pane says it is reading', async $ => {
   expect((await ui.find({ type: 'Text' }))?.text).toBe('Reading the repository…')
   await ui.unmount()
 })
+
+test('quiet stretches fold, and the button shows every commit', async ($, on) => {
+  // Below the tip, seven quiet commits fold into one square; the root (no parent) stays.
+  const log =
+    Array.from({ length: 9 }, (_, i) =>
+      row(`c${i}`, i < 8 ? `c${i + 1}` : '', '2026-11-01', 'Lars', i === 0 ? 'HEAD -> main' : '', `edit ${i}`),
+    ).join(RS + '\n') + RS
+  on('command.register', () => ({ value: { command: 'branchline' } }))
+  on('ui.open', () => ({ value: { isPlaced: true } }))
+  on('process.run', (_, e) => {
+    const args = e.argv.join(' ')
+    if (args.includes(' log ')) return { value: { exitCode: 0, stdout: log, stderr: '' } }
+    if (args.includes('ahead-behind')) return { value: { exitCode: 0, stdout: row('refs/heads/main', '0 0'), stderr: '' } }
+    if (args.includes('for-each-ref')) {
+      return { value: { exitCode: 0, stdout: row('refs/heads/main', 'c0', '', '2026-11-01', '*'), stderr: '' } }
+    }
+    if (args.includes('symbolic-ref')) return { value: { exitCode: 1, stdout: '', stderr: '' } }
+    return { value: fakeGit(e.argv) }
+  })
+
+  await $.command.run({ command: 'branchline' })
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+
+  const svg = async () => (await ui.find({ type: 'Svg' }))?.props as { alt: string; source: string }
+  expect((await svg()).alt).toBe('Commit graph: 3 rows (9 commits, quiet stretches folded) on 1 lane.')
+  expect((await svg()).source).toContain('7 commits')
+  expect((await ui.find({ key: 'compact' }))?.text).toBe('Show every commit')
+
+  await ui.press({ key: 'compact' })
+  expect((await svg()).alt).toBe('Commit graph: 9 commits on 1 lane.')
+  expect((await ui.find({ key: 'compact' }))?.text).toBe('Fold quiet stretches')
+  await ui.unmount()
+})
