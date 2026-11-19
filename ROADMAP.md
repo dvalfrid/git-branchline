@@ -101,3 +101,17 @@ Steg 6 klart: panelen uppdateras av sig själv, och grafen går att skrolla i et
   uppmätt 76 celler ≈ 640 px (8,4 px per cell) och en rad ≈ 22 px. Hopslagning
   sker nu bara när commitarna inte får plats i panelen (`foldMode` `auto`);
   knappen väljer `fold` eller `expand` för resten av sessionen.
+- 2026-11-19: grentabellen delas i grupper, i den här ordningen: Active (HEAD,
+  basen och osammanslagna lokala grenar med en commit de senaste 14 dagarna),
+  Local and remote (övriga lokala som också finns på en remote), Remote only
+  och Old local (övriga lokala). Varje grupp har en rubrik som fäller ihop och
+  ut den; Old local är ihopfälld från början. Grenarna ligger nu **ovanför**
+  grafen, så att grafen inte flyttar dem när den växer. Daniel ville helst dela
+  panelen i en övre del för grafen och en nedre för grenarna, med var sin
+  rullning, men en `Box` kan inte rulla på höjden (bara `overflow: hidden`),
+  så hela panelen rullar som en.
+- 2026-11-19: grafen ritas 48 px smalare än panelens uppmätta bredd (marginal
+  och rullist) och förankras upptill, så att den inte skalas ned och centreras
+  med ett tomrum ovanför. En lokal gren och dess `origin/`-kopia på samma
+  commit visas som ett piller (`main ⇅`). Piller som skulle gå in i författare
+  och datum ersätts med `+N`.

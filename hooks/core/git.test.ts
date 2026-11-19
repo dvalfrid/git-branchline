@@ -36,3 +36,29 @@ test('a branch without counts is open or stale by its date', () => {
   const branches = buildBranches({ refs, counts: new Map(), defaultName: 'main', base: 'main', today: '2026-11-19' })
   expect(branches.map(b => `${b.name}:${b.status}`)).toEqual(['main:base', 'new:open', 'old:stale'])
 })
+
+test('branches are grouped: active, local and remote, remote only, old local', () => {
+  const refs = parseRefs(
+    [
+      row('refs/heads/main', 'a', 'origin/main', '2026-11-18', '*'),
+      row('refs/heads/fresh', 'b', '', '2026-11-15', ''),
+      row('refs/heads/synced', 'c', 'origin/synced', '2026-09-01', ''),
+      row('refs/heads/pushed', 'd', '', '2026-08-01', ''),
+      row('refs/heads/gone', 'e', '', '2026-03-01', ''),
+      row('refs/remotes/origin/main', 'a', '', '2026-11-18', ''),
+      row('refs/remotes/origin/synced', 'c', '', '2026-09-01', ''),
+      row('refs/remotes/origin/pushed', 'd', '', '2026-08-01', ''),
+      row('refs/remotes/origin/theirs', 'f', '', '2026-11-10', ''),
+    ].join('\n'),
+  )
+  const counts = new Map([['refs/heads/fresh', { ahead: 2, behind: 0 }]])
+  const branches = buildBranches({ refs, counts, defaultName: 'main', base: 'origin/main', today: '2026-11-19' })
+  expect(branches.map(b => `${b.name}:${b.group}`)).toEqual([
+    'main:active',
+    'fresh:active',
+    'origin/theirs:remote',
+    'synced:tracked',
+    'pushed:tracked', // no upstream set, but origin/pushed exists
+    'gone:old',
+  ])
+})

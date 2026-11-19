@@ -18,6 +18,16 @@ const PANE = {
 
 const row = (...fields: string[]) => fields.join(FS)
 
+/** YYYY-MM-DD this many days before today: 'active' depends on how recent a branch is. */
+const daysAgo = (days: number): string => {
+  const date = new Date(Date.now() - days * 86_400_000)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+}
+const MAIN_DATE = daysAgo(1)
+const FEATURE_DATE = daysAgo(2)
+const CMS_DATE = daysAgo(9)
+
 /** A small repo: main (HEAD), an open feature, a stale branch, a merged remote-only branch, a tag. */
 const fakeGit = (argv: readonly string[]): { exitCode: number; stdout: string; stderr: string } => {
   const ok = (stdout: string) => ({ exitCode: 0, stdout, stderr: '' })
@@ -39,12 +49,12 @@ const fakeGit = (argv: readonly string[]): { exitCode: number; stdout: string; s
   if (args.includes('for-each-ref')) {
     return ok(
       [
-        row('refs/heads/main', 'a1', 'origin/main', '2026-11-18', '*'),
-        row('refs/heads/feature/x', 'b2', '', '2026-11-17', ' '),
+        row('refs/heads/main', 'a1', 'origin/main', MAIN_DATE, '*'),
+        row('refs/heads/feature/x', 'b2', '', FEATURE_DATE, ' '),
         row('refs/heads/old', 'c3', '', '2026-01-01', ' '),
-        row('refs/remotes/origin/HEAD', 'a1', '', '2026-11-18', ' '),
-        row('refs/remotes/origin/main', 'a1', '', '2026-11-18', ' '),
-        row('refs/remotes/origin/cms', 'd4', '', '2026-11-10', ' '),
+        row('refs/remotes/origin/HEAD', 'a1', '', MAIN_DATE, ' '),
+        row('refs/remotes/origin/main', 'a1', '', MAIN_DATE, ' '),
+        row('refs/remotes/origin/cms', 'd4', '', CMS_DATE, ' '),
         row('refs/tags/v1', 'a1', '', '2026-11-01', ' '),
       ].join('\n') + '\n',
     )
@@ -62,7 +72,7 @@ const fakeGit = (argv: readonly string[]): { exitCode: number; stdout: string; s
   return { exitCode: 1, stdout: '', stderr: `unexpected: ${args}` }
 }
 
-test('the pane shows the branch table, on every surface', async ($, on) => {
+test('the pane shows the branches in groups, on every surface', async ($, on) => {
   on('command.register', () => ({ value: { command: 'branchline' } }))
   on('ui.open', () => ({ value: { isPlaced: true } }))
   on('process.run', (_, e) => ({ value: fakeGit(e.argv) }))
@@ -79,19 +89,37 @@ test('the pane shows the branch table, on every surface', async ($, on) => {
 
     const svg = await ui.find({ type: 'Svg' })
     expect(svg !== undefined).toBe(surface === 'desktop' || surface === 'vscode')
-    // Drawn at the pane's width (80 cells) and its full height, never scaled.
-    if (svg) expect([svg.props.width, svg.props.height]).toEqual([672, 2 * 24])
+    // Drawn at the pane's width (80 cells, less padding) and its full height, never scaled.
+    if (svg) expect([svg.props.width, svg.props.height]).toEqual([624, 2 * 24])
 
-    const table = (await ui.find({ type: 'Markdown', text: /\| Branch \|/ }))?.text ?? ''
-    const lines = table.split('\n').slice(2)
-    expect(lines).toEqual([
-      '| **`main`** | 2026-11-18 | – | – | HEAD · base |',
-      '| `feature/x` | 2026-11-17 | 1 | 2 | open |',
-      '| `origin/cms` | 2026-11-10 | 5 | 0 | merged · remote only |',
-      '| `old` | 2026-01-01 | 40 | 3 | stale |',
+    // Groups in order; old local branches start folded away.
+    const headers = (await ui.findAll({ type: 'Button' })).map(button => button.text).filter(text => /\(\d+\)$/.test(text))
+    expect(headers).toEqual(['▾ Active (2)', '▾ Remote only (1)', '▸ Old local (1)'])
+    const tables = (await ui.findAll({ type: 'Markdown', text: /\| Branch \|/ })).map(table => table.text.split('\n').slice(2))
+    expect(tables).toEqual([
+      [`| **\`main\`** | ${MAIN_DATE} | – | – | HEAD · base |`, `| \`feature/x\` | ${FEATURE_DATE} | 1 | 2 | open |`],
+      [`| \`origin/cms\` | ${CMS_DATE} | 5 | 0 | merged · remote only |`],
     ])
     await ui.unmount()
   }
+})
+
+test('a group header folds its branches away and back', async ($, on) => {
+  on('command.register', () => ({ value: { command: 'branchline' } }))
+  on('ui.open', () => ({ value: { isPlaced: true } }))
+  on('process.run', (_, e) => ({ value: fakeGit(e.argv) }))
+  await $.command.run({ command: 'branchline' })
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  const tableWith = (name: string) => ui.find({ type: 'Markdown', text: new RegExp(`\`${name}\``) })
+
+  expect(await tableWith('old')).toBeUndefined()
+  await ui.press({ key: 'toggle-old' })
+  expect((await tableWith('old'))?.text).toContain('| stale |')
+
+  await ui.press({ key: 'toggle-active' })
+  expect(await tableWith('feature/x')).toBeUndefined()
+  expect((await ui.find({ key: 'toggle-active' }))?.text).toBe('▸ Active (2)')
+  await ui.unmount()
 })
 
 test('a folder outside git says so', async ($, on) => {

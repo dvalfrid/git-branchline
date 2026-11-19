@@ -3,6 +3,13 @@
 /** How a branch stands against the base branch (origin/main or main). */
 export type BranchStatus = 'base' | 'open' | 'merged' | 'stale'
 
+/**
+ * active: HEAD, the base, and unmerged local branches with a commit in the
+ * last ACTIVE_DAYS. tracked: other local branches that also exist on a remote.
+ * remote: remote-only branches. old: other local-only branches.
+ */
+export type BranchGroup = 'active' | 'tracked' | 'remote' | 'old'
+
 export type Branch = {
   /** Short name: `main`, `feature/x`, or `origin/x` for a remote-only branch. */
   name: string
@@ -17,6 +24,10 @@ export type Branch = {
   ahead?: number
   status: BranchStatus
   isHead: boolean
+  /** A local branch that also exists on a remote (tracked, or origin/<same name>). */
+  hasRemote: boolean
+  /** Which part of the branch table it is listed in. */
+  group: BranchGroup
 }
 
 export type FoldMode = 'auto' | 'fold' | 'expand'
@@ -56,6 +67,8 @@ declare module 'claude-code' {
       snapshot: Shaped<Snapshot>
       /** Folding of quiet chains: 'auto' folds only when the graph does not fit. */
       foldMode: FoldMode
+      /** Branch groups the person has folded away in the table. */
+      hiddenGroups: BranchGroup[]
     }
   }
 }

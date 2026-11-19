@@ -1,6 +1,6 @@
 // Turns a snapshot into text for the pane. Pure, like git.ts.
 
-import type { Branch, Snapshot } from '../../types'
+import type { Branch, BranchGroup, Snapshot } from '../../types'
 
 type Ok = Extract<Snapshot, { state: 'ok' }>
 
@@ -47,3 +47,16 @@ const status = (branch: Branch): string => {
 }
 
 const escape = (text: string): string => text.replace(/([\\`*_|[\]])/g, '\\$1')
+
+export const GROUPS: { id: BranchGroup; title: string }[] = [
+  { id: 'active', title: 'Active' },
+  { id: 'tracked', title: 'Local and remote' },
+  { id: 'remote', title: 'Remote only' },
+  { id: 'old', title: 'Old local' },
+]
+
+/** The groups in table order, empty ones left out; branches keep their order. */
+export const groupBranches = (branches: Branch[]): { id: BranchGroup; title: string; branches: Branch[] }[] =>
+  GROUPS.map(group => ({ ...group, branches: branches.filter(branch => branch.group === group.id) })).filter(
+    group => group.branches.length > 0,
+  )

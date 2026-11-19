@@ -14,13 +14,13 @@ const c = (id: string, parents: string, refs = '', subject = id): Commit => ({
   subject,
 })
 
-test('decorations become pills, HEAD first and origin/HEAD dropped', () => {
-  expect(pills(['HEAD -> main', 'origin/main', 'origin/HEAD', 'tag: v1', 'feature/x'])).toEqual([
+test('decorations become pills: HEAD first, origin/HEAD dropped, local and remote copies merged', () => {
+  expect(pills(['HEAD -> main', 'origin/main', 'origin/HEAD', 'tag: v1', 'feature/x', 'origin/only'])).toEqual([
     { text: 'HEAD', kind: 'head' },
-    { text: 'main', kind: 'branch' },
-    { text: 'origin/main', kind: 'remote' },
+    { text: 'main ⇅', kind: 'both' },
     { text: 'v1', kind: 'tag' },
     { text: 'feature/x', kind: 'branch' },
+    { text: 'origin/only', kind: 'remote' },
   ])
 })
 
@@ -74,4 +74,13 @@ test('hovering a row shows its commit, and a folded row lists its commits', () =
   const { source } = graphSvg(rows, layoutGraph(rows, 'd'))
   expect(source.match(/<g class="r"><title>/g)).toHaveLength(3)
   expect(source).toContain('&gt;')
+})
+
+test('pills that would run into the author and date are counted instead', () => {
+  const refs = Array.from({ length: 12 }, (_, i) => `feature/a-rather-long-branch-name-${i}`)
+  const commits = [c('a', '', refs.join(', '))]
+  const { source } = graphSvg(commits, layoutGraph(commits, 'a'), { width: 600 })
+  const drawn = source.match(/class="pt"[^>]*>([^<]*)</g) ?? []
+  expect(drawn.length).toBeLessThan(12)
+  expect(source).toMatch(/>\+\d+</)
 })

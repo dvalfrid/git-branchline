@@ -1,11 +1,11 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import type { FoldMode, Snapshot } from '../types'
+import type { BranchGroup, FoldMode, Snapshot } from '../types'
 import { compactCommits } from './core/compact'
 import { layoutGraph, tipOf } from './core/layout'
 import { ROW, graphSvg } from './core/svg'
-import { branchTable, headline } from './core/table'
+import { branchTable, groupBranches, headline } from './core/table'
 import { readRepo, readSignature } from './repo'
 import { createWatcher, runsGit, type Watcher } from './watch'
 
@@ -18,12 +18,15 @@ const LOADING: Snapshot = { state: 'loading' }
 // Change the shape tag whenever Snapshot's fields change: it declines what an
 // earlier version stored, which outlives a reload.
 const snapshot = atom({ plugin: 'git-branchline', key: 'snapshot' } as const, LOADING, {
-  shape: 'snapshot-1',
+  shape: 'snapshot-2',
 })
 
 // Folding: 'auto' folds only when the commits do not fit in the pane; the
 // button sets 'fold' or 'expand' for the rest of the session.
 const foldMode = atom({ plugin: 'git-branchline', key: 'foldMode' } as const, 'auto' as FoldMode)
+
+// Branch groups folded away in the table; old local branches start folded.
+const hiddenGroups = atom({ plugin: 'git-branchline', key: 'hiddenGroups' } as const, ['old'] as BranchGroup[])
 
 /**
  * Pixels per pane cell on the desktop app, measured: a pane 76 cells wide
@@ -33,7 +36,9 @@ const PX_PER_COLUMN = 8.4
 const PX_PER_ROW = 22
 
 /** The graph's width in pixels for a pane this many cells wide. */
-const graphWidth = (columns: number): number => Math.max(360, Math.round(columns * PX_PER_COLUMN))
+// Less the body's padding and scroll bar: a graph wider than its slot is scaled
+// down and centred, which leaves a gap above it.
+const graphWidth = (columns: number): number => Math.max(360, Math.round(columns * PX_PER_COLUMN) - 48)
 
 /** Commit rows that fit in the pane beside the headline, button and table header. */
 const rowsThatFit = (bodyRows: number): number => Math.floor((bodyRows * PX_PER_ROW) / ROW) - 6
@@ -96,6 +101,7 @@ export const register: Register = on => {
     const { Box, Text, Markdown, Svg, Button } = $.ui.resolve(e)
     const shot = await read($, snapshot)
     const mode = await read($, foldMode)
+    const hidden = await read($, hiddenGroups)
 
     if (shot.state === 'loading') return <Text dimColor>Reading the repository…</Text>
     if (shot.state === 'not-repo') return <Text>This session's folder is not a Git repository.</Text>
@@ -115,18 +121,34 @@ export const register: Register = on => {
     // The button only where folding changes something.
     const canFold = folded ? rows.length < shot.commits.length : compactCommits(shot.commits).length < shot.commits.length
 
+    // Branches first, so the graph growing below never moves them; each group
+    // folds away with its header. The fold button sits above the graph for the same reason.
+    const groups = groupBranches(shot.branches).map(group => {
+      const isHidden = hidden.includes(group.id)
+      const toggle = () =>
+        void update($, hiddenGroups, list => (isHidden ? list.filter(id => id !== group.id) : [...list, group.id]))
+      return (
+        <Box key={`group-${group.id}`} flexDirection="column">
+          <Button key={`toggle-${group.id}`} plain dimColor={isHidden} onPress={toggle}>
+            {`${isHidden ? '▸' : '▾'} ${group.title} (${group.branches.length})`}
+          </Button>
+          {!isHidden && <Markdown text={branchTable(group.branches)} />}
+        </Box>
+      )
+    })
+
     return (
       <Box flexDirection="column" gap={1}>
         <Markdown text={headline(shot)} />
-        {graph && Svg && (
-          <Svg source={graph.source} alt={graph.alt} width={graph.width} height={graph.height} isInteractive />
-        )}
+        {groups.length > 0 ? groups : <Text dimColor>No branches yet.</Text>}
         {graph && canFold && (
           <Button key="compact" dimColor onPress={() => void update($, foldMode, () => (folded ? 'expand' : 'fold'))}>
             {folded ? 'Show every commit' : 'Fold quiet stretches'}
           </Button>
         )}
-        <Markdown text={branchTable(shot.branches)} />
+        {graph && Svg && (
+          <Svg source={graph.source} alt={graph.alt} width={graph.width} height={graph.height} isInteractive />
+        )}
       </Box>
     )
   })

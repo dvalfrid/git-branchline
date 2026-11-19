@@ -26,7 +26,7 @@ const STYLE = [
   '.fg{fill:#2c2c2a}.dim{fill:#73726c}',
   '.pill{fill:#f1efe8;stroke:#b4b2a9}.pt{fill:#444441;font-size:10.5px}',
   '.head{fill:#FAEEDA;stroke:#BA7517}.ht{fill:#633806;font-weight:600;font-size:10.5px}',
-  '.tag{fill:none;stroke:#888780;stroke-dasharray:2 2}.rem{fill:none}',
+  '.tag{fill:none;stroke:#888780;stroke-dasharray:2 2}.rem{fill:none}.both{stroke-width:1.5}',
   '.ring{fill:none;stroke:#BA7517;stroke-width:2}',
   '.hit{fill:transparent}.r:hover .hit{fill:#88878026}',
   ...LANE_COLORS.map((color, i) => `.s${i}{stroke:${color}}.f${i}{fill:${color}}`),
@@ -79,7 +79,7 @@ const draw = (commits: GraphCommit[], layout: Layout, rows: number, options: Gra
   const out: string[] = []
 
   out.push(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`,
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMinYMin meet">`,
     `<style>${STYLE}</style>`,
     '<g fill="none" stroke-width="2" stroke-linecap="round">',
   )
@@ -108,20 +108,36 @@ const draw = (commits: GraphCommit[], layout: Layout, rows: number, options: Gra
     }
     if (commit.id === options.headId) out.push(`<circle class="ring" cx="${x}" cy="${y}" r="${RADIUS + 4}"/>`)
 
-    let cursor = textX
-    for (const ref of pills(commit.refs)) {
-      const w = Math.round(ref.text.length * CHAR * 0.92 + 10)
-      const cls = ref.kind === 'head' ? 'head' : ref.kind === 'tag' ? 'pill tag' : ref.kind === 'remote' ? 'pill rem' : 'pill'
-      out.push(
-        `<rect class="${cls}" x="${cursor}" y="${y - 8}" width="${w}" height="16" rx="8"/>`,
-        `<text class="${ref.kind === 'head' ? 'ht' : 'pt'}" x="${cursor + 5}" y="${y + 3.5}">${esc(ref.text)}</text>`,
-      )
-      cursor += w + 4
-    }
-
     const dates = commit.firstDate && commit.firstDate !== commit.date ? `${commit.firstDate} – ${commit.date}` : commit.date
     const meta = `${commit.author} · ${dates}`
     const metaWidth = meta.length * CHAR
+    // Pills stop where the subject's minimum room would begin; the rest is counted.
+    const pillLimit = width - PAD - metaWidth - 12 - 8 * CHAR
+
+    let cursor = textX
+    const all = pills(commit.refs)
+    for (const [index, ref] of all.entries()) {
+      const w = pillWidth(ref.text)
+      const left = all.length - index
+      if (index > 0 && cursor + w > pillLimit) {
+        const more = `+${left}`
+        out.push(
+          `<rect class="pill" x="${cursor}" y="${y - 8}" width="${pillWidth(more)}" height="16" rx="8"/>`,
+          `<text class="pt" x="${cursor + 5}" y="${y + 3.5}">${more}</text>`,
+        )
+        cursor += pillWidth(more) + 4
+        break
+      }
+      const cls =
+        ref.kind === 'head' ? 'head' : ref.kind === 'tag' ? 'pill tag' : ref.kind === 'remote' ? 'pill rem' : ref.kind === 'both' ? 'pill both' : 'pill'
+      const text = clip(ref.text, Math.max(4, Math.floor((pillLimit - cursor - 10) / (CHAR * 0.92))))
+      const drawn = Math.min(w, pillWidth(text))
+      out.push(
+        `<rect class="${cls}" x="${cursor}" y="${y - 8}" width="${drawn}" height="16" rx="8"/>`,
+        `<text class="${ref.kind === 'head' ? 'ht' : 'pt'}" x="${cursor + 5}" y="${y + 3.5}">${esc(text)}</text>`,
+      )
+      cursor += drawn + 4
+    }
     const room = Math.floor((width - PAD - metaWidth - 12 - cursor) / CHAR)
     out.push(
       `<text class="${commit.count ? 'dim' : 'fg'}" x="${cursor + 2}" y="${y + 4}">${esc(clip(commit.subject, room))}</text>`,
@@ -187,10 +203,32 @@ export const tooltip = (commit: GraphCommit): string => {
   return [`${commit.members.length} commits (show every commit with the button below)`, ...shown, ...(rest > 0 ? [`… and ${rest} more`] : [])].join('\n')
 }
 
-export type Pill = { text: string; kind: 'head' | 'branch' | 'remote' | 'tag' }
+export type Pill = { text: string; kind: 'head' | 'branch' | 'remote' | 'both' | 'tag' }
 
-/** `HEAD -> main, origin/main, tag: v1` decorations as pills, HEAD first. */
-export const pills = (refs: string[]): Pill[] =>
+const pillWidth = (text: string): number => Math.round(text.length * CHAR * 0.92 + 10)
+
+/**
+ * `HEAD -> main, origin/main, tag: v1` decorations as pills, HEAD first. A
+ * local branch and its remote copy on the same commit become one `both` pill
+ * (`main ⇅`).
+ */
+export const pills = (refs: string[]): Pill[] => {
+  const raw = rawPills(refs)
+  const locals = new Set(raw.filter(pill => pill.kind === 'branch').map(pill => pill.text))
+  const synced = new Set(
+    raw
+      .filter(pill => pill.kind === 'remote')
+      .map(pill => pill.text.slice(pill.text.indexOf('/') + 1))
+      .filter(name => locals.has(name)),
+  )
+  return raw.flatMap((pill): Pill[] => {
+    if (pill.kind === 'remote' && synced.has(pill.text.slice(pill.text.indexOf('/') + 1))) return []
+    if (pill.kind === 'branch' && synced.has(pill.text)) return [{ text: `${pill.text} ⇅`, kind: 'both' }]
+    return [pill]
+  })
+}
+
+const rawPills = (refs: string[]): Pill[] =>
   refs.flatMap((ref): Pill[] => {
     if (ref.startsWith('HEAD -> ')) return [{ text: 'HEAD', kind: 'head' }, { text: ref.slice(8), kind: 'branch' }]
     if (ref === 'HEAD') return [{ text: 'HEAD', kind: 'head' }]

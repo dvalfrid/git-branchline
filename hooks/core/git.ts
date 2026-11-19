@@ -1,13 +1,16 @@
 // Pure parsing of git output. No `$` here, so this file can be reused
 // outside the mod (for example in an MCP server).
 
-import type { Branch, BranchStatus, Commit, Tag } from '../../types'
+import type { Branch, BranchGroup, BranchStatus, Commit, Tag } from '../../types'
 
 export const FS = '\x1f'
 export const RS = '\x1e'
 
 /** Unmerged branches with no commit for this many days count as stale. */
 export const STALE_DAYS = 90
+
+/** Unmerged local branches with a commit this recent count as active. */
+export const ACTIVE_DAYS = 14
 
 export const REF_FORMAT = [
   '%(refname)',
@@ -103,6 +106,7 @@ export type BuildInput = {
  */
 export const buildBranches = ({ refs, counts, defaultName, base, today }: BuildInput): Branch[] => {
   const locals = refs.filter(isLocal)
+  const remoteNames = new Set(refs.filter(ref => ref.refname.startsWith('refs/remotes/')).map(ref => short(ref.refname)))
   const covered = new Set<string>()
   for (const local of locals) {
     if (local.upstream) covered.add(local.upstream)
@@ -123,14 +127,19 @@ export const buildBranches = ({ refs, counts, defaultName, base, today }: BuildI
         : daysBetween(ref.date, today) > STALE_DAYS
           ? 'stale'
           : 'open'
-    const branch: Branch = {
-      name,
-      kind: isLocal(ref) ? 'local' : 'remote',
-      sha: ref.sha,
-      date: ref.date,
-      status,
-      isHead: ref.isHead,
-    }
+    const kind = isLocal(ref) ? 'local' : 'remote'
+    const hasRemote =
+      kind === 'local' && ((ref.upstream !== '' && remoteNames.has(ref.upstream)) || remoteNames.has(`origin/${name}`))
+    const isRecent = daysBetween(ref.date, today) <= ACTIVE_DAYS
+    const group: BranchGroup =
+      ref.isHead || status === 'base' || (kind === 'local' && status === 'open' && isRecent)
+        ? 'active'
+        : kind === 'remote'
+          ? 'remote'
+          : hasRemote
+            ? 'tracked'
+            : 'old'
+    const branch: Branch = { name, kind, sha: ref.sha, date: ref.date, status, isHead: ref.isHead, hasRemote, group }
     if (ref.upstream) branch.upstream = ref.upstream
     if (count) {
       branch.ahead = count.ahead
