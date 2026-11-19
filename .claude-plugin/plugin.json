@@ -1,0 +1,5 @@
+{
+  "name": "git-branchline",
+  "version": "0.1.0",
+  "description": "Branchline for Claude Code: a live Git history pane for the session's repo"
+}

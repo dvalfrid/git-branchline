@@ -2,13 +2,14 @@
 
 ## Nu / Next
 
-Inget påbörjat. Börja med steg 1.
+Steg 1: skelettet är skrivet och klarar `claude plugin validate` och
+`claude plugin test`. Kvar: ladda det i desktopappen och se att panelen syns.
 
 ## Steg
 
 - [ ] **1. Skelett som laddas**: `plugin.json`, `hooks.json` och en
-      `register.tsx` som öppnar en tom panel "Git-graf" och registrerar
-      `/git-graf`. Ladda den i desktopappen (se CLAUDE.md) och bekräfta att
+      `register.tsx` som öppnar en tom panel "Branchline" och registrerar
+      `/branchline`. Ladda den i desktopappen (se CLAUDE.md) och bekräfta att
       panelen syns.
 - [ ] **2. Läsa repot**: kör git via `$.process.run`, parsa refs och log
       (avgränsare `%x1f`), spara i en atom. Visa först grentabellen (gren,
@@ -35,3 +36,6 @@ Inget påbörjat. Börja med steg 1.
 
 - 2026-11-19: projektet skapat. Desktopappen på Windows är huvudmålet. Modden
   läser bara repot och ändrar ingenting i det.
+- 2026-11-19: namnet blev `git-branchline` (visningsnamn "Branchline for
+  Claude Code", kommando `/branchline`, panelrubrik "Branchline"). Mappen
+  heter `D:\Development\git-branchline`. Panelen öppnas vid sessionsstart.

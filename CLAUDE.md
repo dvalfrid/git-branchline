@@ -5,7 +5,7 @@ Startkontext för kodsessioner i det här projektet. Läs den här filen och
 
 ## Vad det är
 
-**git-graf** är en mod (ett plugin) till Claude Code som visar Git-historiken
+**git-branchline** (visningsnamn "Branchline for Claude Code") är en mod (ett plugin) till Claude Code som visar Git-historiken
 för sessionens repo i en panel bredvid chatten: brancher, taggar, remotes, var
 `HEAD` står och hur grenarna ligger mot `main` (före/efter). Panelen ska
 uppdateras av sig själv när historiken ändras: commit, fetch, pull, byte av
@@ -30,8 +30,8 @@ efter `Pane: {`, `'tool.call'`, `$.process`, `Svg` och liknande.
 Grundformen:
 
 ```
-git-graf/
-  .claude-plugin/plugin.json   { "name": "git-graf", "version": "0.1.0", "description": "…", "types": "./types/index.d.ts" }
+git-branchline/
+  .claude-plugin/plugin.json   { "name": "git-branchline", "version": "0.1.0", "description": "…", "types": "./types/index.d.ts" }
   hooks/hooks.json             { "modules": ["./register.tsx"] }
   hooks/register.tsx           export const register: Register = (on, options) => { … }
   types/index.d.ts             kontraktet för värden i $.state (interface PluginState)
@@ -50,7 +50,7 @@ git-graf/
   skrivning ritar om panelen. Byt `shape`-taggen när datans form ändras.
 - **Köra git:** `$.process.run({ argv: ['git', '-C', repo, …] })`. Skicka
   alltid argv som lista, aldrig en sammanfogad shell-sträng.
-- **Slash-kommando:** `$.command.register({ name: 'git-graf', … })` i
+- **Slash-kommando:** `$.command.register({ name: 'branchline', … })` i
   `session.start`, besvaras av en `command.run`-hook.
 - **Timer:** `$.clock.every(…)` (stoppas vid omladdning).
 - Kontroller: `claude plugin validate .`, `tsc -p .` (när typerna lagts ut i
@@ -58,15 +58,15 @@ git-graf/
 
 ### Ladda modden under utveckling
 
-- **Terminal:** `claude --plugin-dir D:\Development\git-graf`. Mappen bevakas
+- **Terminal:** `claude --plugin-dir D:\Development\git-branchline`. Mappen bevakas
   och modden laddas om när du sparar.
 - **Desktopappen:** lägg mappen i `CLAUDE_CODE_PLUGIN_DIRS` i `env`-blocket i
   `~/.claude/settings.json` (inte i ett projekts settings), till exempel
-  `"CLAUDE_CODE_PLUGIN_DIRS": "D:\\Development\\git-graf"`. Lägg också till
+  `"CLAUDE_CODE_PLUGIN_DIRS": "D:\\Development\\git-branchline"`. Lägg också till
   `"CLAUDE_CODE_PLUGIN_DIR_WATCH": "1"` om den inte laddas om när du sparar.
   Starta en ny session efter ändringen. **Fråga Daniel innan du ändrar
   `~/.claude/settings.json`.**
-- Fel i en hook syns som en grå rad i transkriptet (`git-graf: … hook skipped:
+- Fel i en hook syns som en grå rad i transkriptet (`git-branchline: … hook skipped:
   …`) och i debugloggen (`claude --debug`).
 
 ## Design (utkast, ändra fritt i ROADMAP när det avgörs)
@@ -109,7 +109,7 @@ för en prick. Det gjorde prototypen läsbar. Gör det valbart.
    `git rev-parse HEAD` och en hash av `for-each-ref`-utdata, och läs bara om
    allt när den har ändrats. Det fångar ändringar Daniel gör själv i en
    terminal eller i GitKraken.
-3. Ett kommando `/git-graf` som öppnar panelen och uppdaterar den.
+3. Ett kommando `/branchline` som öppnar panelen och uppdaterar den.
 
 **Vilket repo:** sessionens arbetsmapp. Hitta roten med
 `git rev-parse --show-toplevel` och visa ett vänligt "inte ett git-repo"
@@ -140,5 +140,5 @@ blå `#378ADD`. Ta temafärger från `$.ui`/temat om API:t ger dem.
   på via `userConfig`.
 - Håll `ROADMAP.md` aktuell: bocka av steg och skriv beslut där i samma commit.
 - Dela/installera: när Daniel vill det, lägg `.claude-plugin/marketplace.json`
-  och en installationsrad i README (`/plugin install git-graf --marketplace
+  och en installationsrad i README (`/plugin install git-branchline --marketplace
   <owner>/<repo>`), enligt skillens avsnitt "Sharing a mod".
