@@ -2,12 +2,11 @@
 
 ## Nu / Next
 
-Steg 1: skelettet är skrivet och klarar `claude plugin validate` och
-`claude plugin test`. Kvar: ladda det i desktopappen och se att panelen syns.
+Steg 1 klart. Nästa: steg 2, läsa repot och visa grentabellen.
 
 ## Steg
 
-- [ ] **1. Skelett som laddas**: `plugin.json`, `hooks.json` och en
+- [x] **1. Skelett som laddas**: `plugin.json`, `hooks.json` och en
       `register.tsx` som öppnar en tom panel "Branchline" och registrerar
       `/branchline`. Ladda den i desktopappen (se CLAUDE.md) och bekräfta att
       panelen syns.
@@ -39,3 +38,6 @@ Steg 1: skelettet är skrivet och klarar `claude plugin validate` och
 - 2026-11-19: namnet blev `git-branchline` (visningsnamn "Branchline for
   Claude Code", kommando `/branchline`, panelrubrik "Branchline"). Mappen
   heter `D:\Development\git-branchline`. Panelen öppnas vid sessionsstart.
+- 2026-11-19: steg 1 bekräftat, panelen syns i desktopappen. Efter en ändring
+  av `CLAUDE_CODE_PLUGIN_DIRS` måste desktopappen avslutas helt och startas om;
+  en ny session med + räcker inte.

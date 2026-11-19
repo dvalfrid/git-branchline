@@ -64,7 +64,8 @@ git-branchline/
   `~/.claude/settings.json` (inte i ett projekts settings), till exempel
   `"CLAUDE_CODE_PLUGIN_DIRS": "D:\\Development\\git-branchline"`. Lägg också till
   `"CLAUDE_CODE_PLUGIN_DIR_WATCH": "1"` om den inte laddas om när du sparar.
-  Starta en ny session efter ändringen. **Fråga Daniel innan du ändrar
+  Avsluta sedan desktopappen helt (Quit i systemfältet) och starta om den:
+  en ny session med + läser inte om inställningen. **Fråga Daniel innan du ändrar
   `~/.claude/settings.json`.**
 - Fel i en hook syns som en grå rad i transkriptet (`git-branchline: … hook skipped:
   …`) och i debugloggen (`claude --debug`).

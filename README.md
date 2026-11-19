@@ -15,5 +15,5 @@ claude --plugin-dir D:\Development\git-branchline
 ```
 
 Desktopappen: lägg till `"CLAUDE_CODE_PLUGIN_DIRS": "D:\\Development\\git-branchline"`
-i `env` i `~/.claude/settings.json` och starta en ny session. Öppna sedan
+i `env` i `~/.claude/settings.json` och starta om desktopappen helt. Öppna sedan
 panelen med `/branchline`.
