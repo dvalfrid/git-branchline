@@ -141,6 +141,12 @@ blå `#378ADD`. Ta temafärger från `$.ui`/temat om API:t ger dem.
   En automatisk `git fetch` vore bekväm, men den går mot nätet och ändrar
   remote-refs: om den byggs ska den vara avstängd som standard och kunna slås
   på via `userConfig`.
+- Undantag som Daniel bett om (2026-11-19): modden får ta bort **sammanslagna
+  lokala** grenar med `git branch -d` (som vägrar osammanslaget arbete), och
+  bara efter två tryck (knapp och bekräftelse). Allt annat som ändrar repot,
+  som `git branch -D` eller att ta bort en gren på origin, lämnas till Claude:
+  knappen fyller bara promptrutan, och Claude kör det med sina vanliga
+  behörighetsfrågor.
 - Håll `ROADMAP.md` aktuell: bocka av steg och skriv beslut där i samma commit.
 - Dela/installera: när Daniel vill det, lägg `.claude-plugin/marketplace.json`
   och en installationsrad i README (`/plugin install git-branchline --marketplace

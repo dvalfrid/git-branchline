@@ -144,3 +144,21 @@ export const parseNumstat = (stdout: string): { path: string; added: number; rem
       const [added = '0', removed = '0', ...path] = line.split('\t')
       return { path: path.join('\t'), added: Number(added) || 0, removed: Number(removed) || 0 }
     })
+
+/**
+ * Deletes local branches with `git branch -d`, which refuses a branch whose
+ * commits are not merged anywhere, so no work is lost. One call per branch,
+ * so one refusal does not stop the rest.
+ */
+export const deleteBranches = async (
+  run: Run,
+  root: string,
+  names: string[],
+): Promise<{ name: string; ok: boolean; message: string }[]> => {
+  const results: { name: string; ok: boolean; message: string }[] = []
+  for (const name of names) {
+    const out = await run(['git', '-C', root, 'branch', '-d', '--', name])
+    results.push({ name, ok: out.exitCode === 0, message: firstLine(out.exitCode === 0 ? out.stdout : out.stderr) })
+  }
+  return results
+}

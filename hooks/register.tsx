@@ -1,15 +1,15 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import type { Branch, BranchDetails, BranchGroup, FoldMode, Snapshot, View } from '../types'
+import type { Branch, BranchDetails, BranchGroup, FoldMode, Notice, PendingDelete, Snapshot, View } from '../types'
 import { compactCommits } from './core/compact'
 import { layoutGraph, tipOf } from './core/layout'
 import { LANE_COLORS, ROW, graphSvg, pills } from './core/svg'
 import { textGraph } from './core/textgraph'
 import { branchListSvg } from './core/branches-svg'
-import { askPrompt, detailsMarkdown } from './core/details'
+import { askPrompt, canDeleteHere, deletePrompt, detailsMarkdown } from './core/details'
 import { branchTable, groupBranches, headline } from './core/table'
-import { readBranchDetails, readRepo, readSignature } from './repo'
+import { deleteBranches, readBranchDetails, readRepo, readSignature } from './repo'
 import { createWatcher, runsGit, type Watcher } from './watch'
 
 const PANE = 'branchline'
@@ -48,6 +48,32 @@ const openBranch = async ($: EngineInterface, base: string, name: string | undef
   }
   // Only if the person has not opened another branch meanwhile.
   await update($, openedBranch, current => (current?.name === name ? details : current))
+}
+
+// Local branches waiting for the second press, and the outcome of the last delete.
+const pendingDelete = atom({ plugin: 'git-branchline', key: 'pendingDelete' } as const, null as PendingDelete | null)
+const noticeAtom = atom({ plugin: 'git-branchline', key: 'notice' } as const, null as Notice | null)
+
+/**
+ * Deletes merged local branches with `git branch -d` (which refuses unmerged
+ * work), says what happened, and reads the repo again.
+ */
+const runDelete = async ($: EngineInterface, root: string, names: string[]): Promise<void> => {
+  await update($, pendingDelete, () => null)
+  let notice: Notice
+  try {
+    const results = await deleteBranches(argv => $.process.run(argv), root, names)
+    const done = results.filter(result => result.ok).map(result => result.name)
+    const failed = results.filter(result => !result.ok)
+    notice = failed.length === 0
+      ? { text: `Deleted ${done.length === 1 ? done[0] : `${done.length} branches`}.`, isError: false }
+      : { text: `${done.length > 0 ? `Deleted ${done.length}; ` : ''}git refused ${failed.map(f => `${f.name} (${f.message})`).join(', ')}`, isError: true }
+  } catch (error) {
+    notice = { text: `git failed: ${error instanceof Error ? error.message : String(error)}`, isError: true }
+  }
+  await update($, noticeAtom, () => notice)
+  await update($, openedBranch, current => (current && names.includes(current.name) ? null : current))
+  await watch($).check(true)
 }
 
 // Which tab the pane shows.
@@ -132,6 +158,8 @@ export const register: Register = on => {
     const hidden = await read($, hiddenGroups)
     const tab = await read($, view)
     const opened = await read($, openedBranch)
+    const pending = await read($, pendingDelete)
+    const notice = await read($, noticeAtom)
 
     if (shot.state === 'loading') return <Text dimColor>Reading the repository…</Text>
     if (shot.state === 'not-repo') return <Text>This session's folder is not a Git repository.</Text>
@@ -235,6 +263,49 @@ export const register: Register = on => {
       const today = isoToday()
       const drawsRows = Svg && e.surface !== 'terminal'
 
+      const fillPrompt = (text: string) =>
+        void $.prompt.fill({ text, mode: 'replace' }).catch(() => $.ui.toast('Could not fill the prompt box.'))
+      const root = shot.root
+
+      // Deleting: what the pane does itself (merged local branches, after a
+      // second press) and what it leaves to Claude (unmerged or remote).
+      const deleteActions = (branch: Branch) => {
+        if (branch.isHead || branch.status === 'base') return null
+        const isPending = pending?.isBulk === false && pending.names[0] === branch.name
+        if (isPending) {
+          return (
+            <Box flexDirection="row" gap={1}>
+              <Text>{`Delete ${branch.name}? Everything on it is merged.`}</Text>
+              <Button key={`confirm-${branch.name}`} variant="primary" onPress={() => void runDelete($, root, [branch.name])}>
+                Yes, delete
+              </Button>
+              <Button key={`cancel-${branch.name}`} onPress={() => void update($, pendingDelete, () => null)}>
+                Cancel
+              </Button>
+            </Box>
+          )
+        }
+        return (
+          <Box flexDirection="row" gap={1}>
+            {canDeleteHere(branch) && (
+              <Button key={`delete-${branch.name}`} onPress={() => void update($, pendingDelete, () => ({ names: [branch.name], isBulk: false }))}>
+                Delete branch
+              </Button>
+            )}
+            {branch.kind === 'local' && !canDeleteHere(branch) && (
+              <Button key={`delete-ask-${branch.name}`} dimColor onPress={() => fillPrompt(deletePrompt(branch, base, 'local'))}>
+                Delete via Claude…
+              </Button>
+            )}
+            {(branch.kind === 'remote' || branch.hasRemote) && (
+              <Button key={`delete-remote-${branch.name}`} dimColor onPress={() => fillPrompt(deletePrompt(branch, base, 'remote'))}>
+                Delete on origin via Claude…
+              </Button>
+            )}
+          </Box>
+        )
+      }
+
       const branchRow = (branch: Branch) => {
         const isOpen = opened?.name === branch.name
         const strip = branchListSvg([branch], { width: width - ROW_BUTTON, today, laneOf })
@@ -255,21 +326,61 @@ export const register: Register = on => {
               <Box flexDirection="column" gap={1} paddingLeft={2} paddingBottom={1}>
                 <Markdown text={detailsMarkdown(branch, opened, base)} />
                 <Box flexDirection="row" gap={1}>
-                  <Button key={`ask-${branch.name}`} variant="primary" onPress={() => void $.prompt.fill({ text: askPrompt(branch, base), mode: 'replace' }).catch(() => $.ui.toast('Could not fill the prompt box.'))}>
+                  <Button key={`ask-${branch.name}`} variant="primary" onPress={() => fillPrompt(askPrompt(branch, base))}>
                     Ask Claude about it
                   </Button>
                   <Button key={`copy-${branch.name}`} onPress={press => void $.ui.copy({ text: branch.name, surface: press.surface }).catch(() => $.ui.toast('Could not copy the name.'))}>
                     Copy name
                   </Button>
                 </Box>
+                {deleteActions(branch)}
               </Box>
             )}
           </Box>
         )
       }
 
+      // In Old local: delete every merged branch at once, after a look at the list.
+      const bulkDelete = (branches: Branch[]) => {
+        const merged = branches.filter(canDeleteHere).map(branch => branch.name)
+        if (merged.length === 0) return null
+        if (pending?.isBulk) {
+          const names = pending.names
+          return (
+            <Box flexDirection="column" gap={1} paddingLeft={2}>
+              <Markdown text={`Delete ${names.length === 1 ? 'this merged branch' : `these ${names.length} merged branches`}?\n\n${names.map(name => `- \`${name}\``).join('\n')}`} />
+              <Box flexDirection="row" gap={1}>
+                <Button key="confirm-bulk" variant="primary" onPress={() => void runDelete($, root, names)}>
+                  {names.length === 1 ? 'Yes, delete' : `Yes, delete ${names.length}`}
+                </Button>
+                <Button key="cancel-bulk" onPress={() => void update($, pendingDelete, () => null)}>
+                  Cancel
+                </Button>
+              </Box>
+            </Box>
+          )
+        }
+        return (
+          <Button
+            key="delete-merged"
+            dimColor
+            onPress={() => void update($, pendingDelete, () => ({ names: merged, isBulk: true }))}
+          >
+            {`Delete merged branches (${merged.length})…`}
+          </Button>
+        )
+      }
+
       return (
         <Box flexDirection="column" gap={1}>
+          {notice && (
+            <Box flexDirection="row" gap={1}>
+              <Text color={notice.isError ? 'error' : 'success'}>{notice.text}</Text>
+              <Button key="dismiss-notice" plain dimColor onPress={() => void update($, noticeAtom, () => null)}>
+                ✕
+              </Button>
+            </Box>
+          )}
           {groups.map(group => {
             const isHidden = hidden.includes(group.id)
             const toggle = () =>
@@ -279,6 +390,7 @@ export const register: Register = on => {
                 <Button key={`toggle-${group.id}`} plain dimColor={isHidden} onPress={toggle}>
                   {`${isHidden ? '▸' : '▾'} ${group.title} (${group.branches.length})`}
                 </Button>
+                {!isHidden && group.id === 'old' && bulkDelete(group.branches)}
                 {!isHidden && drawsRows && group.branches.map(branchRow)}
                 {!isHidden && !drawsRows && <Markdown text={branchTable(group.branches)} />}
               </Box>

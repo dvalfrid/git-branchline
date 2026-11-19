@@ -47,6 +47,30 @@ export const askPrompt = (branch: Branch, base: string): string => {
   )
 }
 
+/** Whether the pane may delete the branch itself: local, not checked out, nothing unmerged. */
+export const canDeleteHere = (branch: Branch): boolean =>
+  branch.kind === 'local' && !branch.isHead && branch.status !== 'base' && branch.ahead === 0
+
+/**
+ * The prompt for a delete the pane leaves to Claude: an unmerged local branch
+ * (work would be lost) or a branch on the remote (others may use it).
+ */
+export const deletePrompt = (branch: Branch, base: string, where: 'local' | 'remote'): string => {
+  if (where === 'remote') {
+    const remoteName = branch.kind === 'remote' ? branch.name : branch.upstream ?? `origin/${branch.name}`
+    const [remote = 'origin', ...rest] = remoteName.split('/')
+    return (
+      `Delete the branch \`${remoteName}\` on the remote (\`git push ${remote} --delete ${rest.join('/')}\`). ` +
+      `First check whether it is merged into \`${base}\` and whether an open pull request uses it, tell me, and ask before you delete.`
+    )
+  }
+  const ahead = branch.ahead !== undefined ? `${plural(branch.ahead, 'commit')} that ${branch.ahead === 1 ? 'is' : 'are'} not on \`${base}\`` : `commits that may not be on \`${base}\``
+  return (
+    `Delete the local branch \`${branch.name}\`. It has ${ahead}, so \`git branch -d\` will refuse it. ` +
+    `First show me those commits and whether they exist anywhere else, then ask before you force the delete with \`git branch -D\`.`
+  )
+}
+
 const commitLine = (commit: { id: string; date: string; author: string; subject: string }) =>
   `${code(commit.id)} ${commit.date} ${escape(commit.author)}: ${escape(commit.subject)}`
 

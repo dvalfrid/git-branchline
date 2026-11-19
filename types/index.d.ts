@@ -32,6 +32,12 @@ export type Branch = {
 
 export type FoldMode = 'auto' | 'fold' | 'expand'
 
+/** Branches waiting for the second press: one opened branch, or the bulk delete in Old local. */
+export type PendingDelete = { names: string[]; isBulk: boolean }
+
+/** A line shown above the branches after something was done. */
+export type Notice = { text: string; isError: boolean }
+
 /** The pane's tabs. */
 export type View = 'graph' | 'branches'
 
@@ -93,6 +99,10 @@ declare module 'claude-code' {
       view: View
       /** The branch opened in the Branches tab, with what was read for it. */
       opened: Shaped<BranchDetails | null>
+      /** Local branches waiting for a second press to be deleted. */
+      pendingDelete: PendingDelete | null
+      /** The outcome of the last delete, shown above the branches. */
+      notice: Notice | null
     }
   }
 }

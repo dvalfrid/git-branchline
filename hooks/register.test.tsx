@@ -289,3 +289,95 @@ test('the terminal gets a text graph with git-style decorations', async ($, on) 
   expect((await ui.find({ type: 'Text', text: /First/ }))?.text).toBe('● First  Daniel · 2026-11-01')
   await ui.unmount()
 })
+
+/** The demo repo plus two merged local branches; `git branch -d` refuses `done2`. */
+const withMerged = (deleted: string[]) => (argv: readonly string[]) => {
+  const args = argv.join(' ')
+  const ok = (stdout: string) => ({ exitCode: 0, stdout, stderr: '' })
+  if (args.includes('branch -d -- ')) {
+    const name = argv[argv.length - 1]!
+    deleted.push(name)
+    return name === 'done2'
+      ? { exitCode: 1, stdout: '', stderr: "error: the branch 'done2' is not fully merged" }
+      : ok(`Deleted branch ${name} (was c1).\n`)
+  }
+  if (args.includes('ahead-behind')) {
+    return ok(fakeGit(argv).stdout + [row('refs/heads/done1', '0 3'), row('refs/heads/done2', '0 7')].join('\n') + '\n')
+  }
+  if (args.includes('for-each-ref') && args.includes('refs/tags')) {
+    return ok(fakeGit(argv).stdout + [row('refs/heads/done1', 'c1', '', '2026-01-02', ' '), row('refs/heads/done2', 'c2', '', '2026-01-03', ' ')].join('\n') + '\n')
+  }
+  if (args.includes('origin/main..')) return ok('')
+  if (args.includes('--numstat')) return ok('')
+  return fakeGit(argv)
+}
+
+const branchesPane = async ($: Parameters<Parameters<typeof test>[1]>[0], on: Parameters<Parameters<typeof test>[1]>[1], deleted: string[], filled: string[] = []) => {
+  on('command.register', () => ({ value: { command: 'branchline' } }))
+  on('ui.open', () => ({ value: { isPlaced: true } }))
+  on('prompt.fill', (_, e) => {
+    filled.push(e.text)
+    return { isFilled: true }
+  })
+  on('process.run', (_, e) => ({ value: withMerged(deleted)(e.argv) }))
+  await $.command.run({ command: 'branchline' })
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  await ui.press({ key: 'tab-branches' })
+  await ui.press({ key: 'toggle-old' })
+  return ui
+}
+const settle = () => new Promise(resolve => setTimeout(resolve, 10))
+
+test('a merged local branch is deleted after a second press', async ($, on) => {
+  const deleted: string[] = []
+  const ui = await branchesPane($, on, deleted)
+
+  await ui.press({ key: 'open-done1' })
+  await settle()
+  await ui.press({ key: 'delete-done1' })
+  expect(deleted).toEqual([]) // nothing yet: the first press only asks
+  expect((await ui.find({ type: 'Text', text: /Delete done1\?/ }))?.text).toBe('Delete done1? Everything on it is merged.')
+
+  await ui.press({ key: 'confirm-done1' })
+  await settle()
+  expect(deleted).toEqual(['done1'])
+  expect((await ui.find({ type: 'Text', text: /Deleted/ }))?.text).toBe('Deleted done1.')
+  await ui.unmount()
+})
+
+test('unmerged and remote deletes are handed to Claude, never run here', async ($, on) => {
+  const deleted: string[] = []
+  const filled: string[] = []
+  const ui = await branchesPane($, on, deleted, filled)
+
+  // feature/x has two commits not on origin/main: no direct delete button.
+  await ui.press({ key: 'open-feature/x' })
+  await settle()
+  expect(await ui.find({ key: 'delete-feature/x' })).toBeUndefined()
+  await ui.press({ key: 'delete-ask-feature/x' })
+  expect(filled[0]).toContain('`git branch -D`')
+
+  await ui.press({ key: 'open-origin/cms' })
+  await settle()
+  await ui.press({ key: 'delete-remote-origin/cms' })
+  expect(filled[1]).toContain('`git push origin --delete cms`')
+  expect(deleted).toEqual([])
+  await ui.unmount()
+})
+
+test('Old local deletes its merged branches together, and says what git refused', async ($, on) => {
+  const deleted: string[] = []
+  const ui = await branchesPane($, on, deleted)
+
+  await ui.press({ key: 'delete-merged' })
+  expect((await ui.find({ type: 'Markdown', text: /Delete these/ }))?.text).toBe(
+    'Delete these 2 merged branches?\n\n- `done2`\n- `done1`',
+  )
+  await ui.press({ key: 'confirm-bulk' })
+  await settle()
+  expect(deleted).toEqual(['done2', 'done1'])
+  expect((await ui.find({ type: 'Text', text: /refused/ }))?.text).toBe(
+    "Deleted 1; git refused done2 (error: the branch 'done2' is not fully merged)",
+  )
+  await ui.unmount()
+})

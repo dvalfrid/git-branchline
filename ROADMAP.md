@@ -141,3 +141,13 @@ Steg 1–8 klara och provade. Kvar: steg 9 (dela), om Daniel vill.
   `(HEAD → main ⇅, tag: v1)` och författare och datum dämpat sist. Samma
   banlayout och hopslagning som på desktop. På mobilen visar Graph-fliken
   bara en hänvisning till Branches.
+- 2026-11-19: ta bort grenar från fliken Branches. En öppnad lokal gren utan
+  egna commits (0 före basen) får **Delete branch**, som frågar "Delete x?
+  Everything on it is merged." och sedan kör `git branch -d -- x`. En lokal
+  gren med egna commits får **Delete via Claude…** och en gren som finns på en
+  remote **Delete on origin via Claude…**; båda fyller bara promptrutan med en
+  fråga som ber Claude visa vad som skulle försvinna och fråga innan. Gruppen
+  Old local har **Delete merged branches (N)…**, som listar grenarna och tar
+  bort dem efter bekräftelse, en i taget, och säger vilka git vägrade.
+  Resultatet visas överst i fliken, och panelen läser om repot efteråt. HEAD
+  och basgrenen kan inte tas bort härifrån.
