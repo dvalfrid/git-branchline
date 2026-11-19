@@ -2,7 +2,7 @@
 
 ## Nu / Next
 
-Steg 2 klart, grentabellen syns i desktopappen. Nästa: steg 3, banlayouten.
+Steg 3 klart (banlayouten, testad). Nästa: steg 4, SVG-grafen på desktop.
 
 ## Steg
 
@@ -13,7 +13,7 @@ Steg 2 klart, grentabellen syns i desktopappen. Nästa: steg 3, banlayouten.
 - [x] **2. Läsa repot**: kör git via `$.process.run`, parsa refs och log
       (avgränsare `%x1f`), spara i en atom. Visa först grentabellen (gren,
       datum, efter/före main, status).
-- [ ] **3. Banlayout**: räkna ut banor automatiskt och testa mot ett fall med
+- [x] **3. Banlayout**: räkna ut banor automatiskt och testa mot ett fall med
       merge-commits (två föräldrar) och grenar som gått ihop.
 - [ ] **4. SVG-graf på desktop**: prickar, kanter, ref-piller, HEAD markerad.
 - [ ] **5. Komprimera** commitföljder utan refs (valbart).
@@ -49,3 +49,11 @@ Steg 2 klart, grentabellen syns i desktopappen. Nästa: steg 3, banlayouten.
   visas bara när ingen lokal gren följer eller speglar dem. Tabellen ritas som
   Markdown, som fungerar på alla ytor. Ren logik ligger i `hooks/core/` (utan
   `$`) så att den kan återanvändas, till exempel i en MCP-server.
+- 2026-11-19, steg 3: `hooks/core/layout.ts` lägger varje commit i en bana.
+  Basgrenens first-parent-linje (från `origin/main` eller `main`) har bana 0
+  ensam. Första föräldern fortsätter i barnets bana; en merges övriga föräldrar
+  får en ny bana om ingen redan väntar på dem. Varje kant har `fromLane`,
+  `viaLane` (banan den går ned i) och `toLane`, så att steg 4 kan rita en böj
+  direkt efter barnet och en vid föräldern. En förälder nedanför de 200
+  commitarna ger en öppen kant (`to` saknas). Testat mot en riktig historik
+  med två merges och en gren från en gren, samma form som `git log --graph`.
