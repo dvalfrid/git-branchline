@@ -4,7 +4,8 @@ import type { EngineInterface, Register } from 'claude-code'
 import type { Branch, BranchDetails, BranchGroup, FoldMode, Snapshot, View } from '../types'
 import { compactCommits } from './core/compact'
 import { layoutGraph, tipOf } from './core/layout'
-import { ROW, graphSvg } from './core/svg'
+import { LANE_COLORS, ROW, graphSvg, pills } from './core/svg'
+import { textGraph } from './core/textgraph'
 import { branchListSvg } from './core/branches-svg'
 import { askPrompt, detailsMarkdown } from './core/details'
 import { branchTable, groupBranches, headline } from './core/table'
@@ -165,27 +166,61 @@ export const register: Register = on => {
     )
 
     function graphTab() {
-      if (!Svg || e.surface === 'terminal' || e.surface === 'mobile') {
-        return <Text dimColor>The graph is drawn in the desktop app and VS Code; the branches are under Branches.</Text>
-      }
       if (shot.state !== 'ok' || shot.commits.length === 0) return <Text dimColor>No commits yet.</Text>
-      const graph = graphSvg(rows, layout, {
-        headId: rows.find(commit => commit.refs.some(ref => ref === 'HEAD' || ref.startsWith('HEAD -> ')))?.id,
-        width,
-      })
+      if (e.surface === 'mobile') return <Text dimColor>The graph is drawn in the desktop app, VS Code and the terminal; the branches are under Branches.</Text>
+      const headId = rows.find(commit => commit.refs.some(ref => ref === 'HEAD' || ref.startsWith('HEAD -> ')))?.id
       // The button only where folding changes something.
       const canFold = folded
         ? rows.length < shot.commits.length
         : compactCommits(shot.commits).length < shot.commits.length
+      const foldButton = canFold && (
+        <Button key="compact" dimColor onPress={() => void update($, foldMode, () => (folded ? 'expand' : 'fold'))}>
+          {folded ? 'Show every commit' : 'Fold quiet stretches'}
+        </Button>
+      )
+
+      if (e.surface === 'terminal' || !Svg) {
+        // The terminal draws no SVG: a text graph, a line per commit.
+        const lines = textGraph(rows, layout, { headId })
+        return (
+          <Box flexDirection="column">
+            {foldButton}
+            {lines.map((line, i) => (
+              <Text key={`line-${i}`} wrap="truncate-end">
+                {line.graph.map(span => (span.lane === undefined ? span.text : <Text color={termColor(span.lane)}>{span.text}</Text>))}
+                {line.commit && <Text> </Text>}
+                {line.commit && refLabel(line.commit.refs)}
+                {line.commit && <Text dimColor={line.commit.count !== undefined}>{line.commit.subject}</Text>}
+                {line.commit && <Text dimColor>{`  ${line.commit.author} · ${line.commit.firstDate ? `${line.commit.firstDate} – ` : ''}${line.commit.date}`}</Text>}
+              </Text>
+            ))}
+          </Box>
+        )
+      }
+
+      const graph = graphSvg(rows, layout, { headId, width })
       return (
         <Box flexDirection="column" gap={1}>
-          {canFold && (
-            <Button key="compact" dimColor onPress={() => void update($, foldMode, () => (folded ? 'expand' : 'fold'))}>
-              {folded ? 'Show every commit' : 'Fold quiet stretches'}
-            </Button>
-          )}
+          {foldButton}
           <Svg source={graph.source} alt={graph.alt} width={graph.width} height={graph.height} isInteractive />
         </Box>
+      )
+    }
+
+    /** `(HEAD → main ⇅, v1) ` with HEAD in the warning color, as git log decorates. */
+    function refLabel(refs: string[]) {
+      const all = pills(refs)
+      if (all.length === 0) return null
+      return (
+        <Text>
+          {'('}
+          {all.map((pill, i) => (
+            <Text color={pill.kind === 'head' ? 'warning' : pill.kind === 'tag' ? undefined : termColor(1)} bold={pill.kind !== 'tag'}>
+              {`${i > 0 ? (all[i - 1]!.kind === 'head' ? ' → ' : ', ') : ''}${pill.kind === 'tag' ? `tag: ${pill.text}` : pill.text}`}
+            </Text>
+          ))}
+          {') '}
+        </Text>
       )
     }
 
@@ -254,6 +289,9 @@ export const register: Register = on => {
     }
   })
 }
+/** Lane colors on the terminal; main's grey is lightened so it reads on a dark background. */
+const termColor = (lane: number): string => (lane % LANE_COLORS.length === 0 ? '#8a8880' : LANE_COLORS[lane % LANE_COLORS.length]!)
+
 const isoToday = (): string => {
   const now = new Date()
   const pad = (n: number) => String(n).padStart(2, '0')

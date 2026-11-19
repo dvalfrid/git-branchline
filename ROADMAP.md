@@ -2,7 +2,7 @@
 
 ## Nu / Next
 
-Steg 8 klart, provat i appen. Kvar: steg 7 (terminalen) och 9 (dela).
+Steg 7 är skrivet och testat (39 av 39). Kvar: prova i en terminal. Sedan steg 9 (dela), om Daniel vill.
 
 ## Steg
 
@@ -133,3 +133,11 @@ Steg 8 klart, provat i appen. Kvar: steg 7 (terminalen) och 9 (dela).
   slutar med "Don't change anything yet." Den skickas inte, Daniel trycker
   själv. **Copy name** kopierar grennamnet. Klick på commits i grafen går
   fortfarande inte; där finns hovringen.
+- 2026-11-19, steg 7: i terminalen ritar fliken Graph en textgraf
+  (`hooks/core/textgraph.ts`) i stil med `git log --graph`: en rad per commit
+  (`●`, `◉` för HEAD, `■` för en ihopslagen rad) och en mellanrad bara där en
+  kant byter bana, ritad med rundade boxtecken (`╭ ╮ ╰ ╯ ├ ┤ ┼`). Varje bana
+  har sin färg (mains grå något ljusare för mörk terminal), refs skrivs som
+  `(HEAD → main ⇅, tag: v1)` och författare och datum dämpat sist. Samma
+  banlayout och hopslagning som på desktop. På mobilen visar Graph-fliken
+  bara en hänvisning till Branches.

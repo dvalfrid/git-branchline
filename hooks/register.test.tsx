@@ -275,3 +275,17 @@ test('opening a branch shows its commits and files, and Ask fills the prompt', a
   expect(await ui.find({ type: 'Markdown', text: /not on/ })).toBeUndefined()
   await ui.unmount()
 })
+
+test('the terminal gets a text graph with git-style decorations', async ($, on) => {
+  on('command.register', () => ({ value: { command: 'branchline' } }))
+  on('ui.open', () => ({ value: { isPlaced: true } }))
+  on('process.run', (_, e) => ({ value: fakeGit(e.argv) }))
+  await $.command.run({ command: 'branchline' })
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+
+  expect(await ui.find({ type: 'Svg' })).toBeUndefined()
+  const top = await ui.find({ type: 'Text', text: /Add pane/ })
+  expect(top?.text).toBe(`◉ (HEAD → main ⇅, tag: v1) Add pane  Daniel · 2026-11-18`)
+  expect((await ui.find({ type: 'Text', text: /First/ }))?.text).toBe('● First  Daniel · 2026-11-01')
+  await ui.unmount()
+})
