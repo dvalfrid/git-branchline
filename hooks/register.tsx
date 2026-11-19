@@ -269,12 +269,8 @@ export const register: Register = on => {
 
       // Deleting: what the pane does itself (merged local branches, after a
       // second press) and what it leaves to Claude (unmerged or remote).
-      const deleteActions = (branch: Branch) => {
-        if (branch.isHead || branch.status === 'base') return null
-        const isPending = pending?.isBulk === false && pending.names[0] === branch.name
-        if (isPending) {
-          return (
-            <Box flexDirection="row" gap={1}>
+      const confirmDelete = (branch: Branch) => (
+            <Box flexDirection="row" flexWrap="wrap" columnGap={1} rowGap={1} alignItems="center">
               <Text>{`Delete ${branch.name}? Everything on it is merged.`}</Text>
               <Button key={`confirm-${branch.name}`} variant="primary" onPress={() => void runDelete($, root, [branch.name])}>
                 Yes, delete
@@ -283,10 +279,12 @@ export const register: Register = on => {
                 Cancel
               </Button>
             </Box>
-          )
-        }
+      )
+
+      const deleteButtons = (branch: Branch) => {
+        if (branch.isHead || branch.status === 'base') return null
         return (
-          <Box flexDirection="row" gap={1}>
+          <>
             {canDeleteHere(branch) && (
               <Button key={`delete-${branch.name}`} onPress={() => void update($, pendingDelete, () => ({ names: [branch.name], isBulk: false }))}>
                 Delete branch
@@ -302,7 +300,7 @@ export const register: Register = on => {
                 Delete on origin via Claude…
               </Button>
             )}
-          </Box>
+          </>
         )
       }
 
@@ -325,15 +323,20 @@ export const register: Register = on => {
             {isOpen && opened && (
               <Box flexDirection="column" gap={1} paddingLeft={2} paddingBottom={1}>
                 <Markdown text={detailsMarkdown(branch, opened, base)} />
-                <Box flexDirection="row" gap={1}>
-                  <Button key={`ask-${branch.name}`} variant="primary" onPress={() => fillPrompt(askPrompt(branch, base))}>
-                    Ask Claude about it
-                  </Button>
-                  <Button key={`copy-${branch.name}`} onPress={press => void $.ui.copy({ text: branch.name, surface: press.surface }).catch(() => $.ui.toast('Could not copy the name.'))}>
-                    Copy name
-                  </Button>
-                </Box>
-                {deleteActions(branch)}
+                {pending?.isBulk === false && pending.names[0] === branch.name ? (
+                  confirmDelete(branch)
+                ) : (
+                  // One row of actions, wrapping only when the pane is too narrow.
+                  <Box flexDirection="row" flexWrap="wrap" columnGap={1} rowGap={1}>
+                    <Button key={`ask-${branch.name}`} variant="primary" onPress={() => fillPrompt(askPrompt(branch, base))}>
+                      Ask Claude about it
+                    </Button>
+                    <Button key={`copy-${branch.name}`} onPress={press => void $.ui.copy({ text: branch.name, surface: press.surface }).catch(() => $.ui.toast('Could not copy the name.'))}>
+                      Copy name
+                    </Button>
+                    {deleteButtons(branch)}
+                  </Box>
+                )}
               </Box>
             )}
           </Box>
