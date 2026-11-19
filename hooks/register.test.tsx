@@ -79,6 +79,8 @@ test('the pane shows the branch table, on every surface', async ($, on) => {
 
     const svg = await ui.find({ type: 'Svg' })
     expect(svg !== undefined).toBe(surface === 'desktop' || surface === 'vscode')
+    // Drawn at the pane's width (80 cells) and its full height, never scaled.
+    if (svg) expect([svg.props.width, svg.props.height]).toEqual([672, 2 * 24])
 
     const table = (await ui.find({ type: 'Markdown', text: /\| Branch \|/ }))?.text ?? ''
     const lines = table.split('\n').slice(2)
@@ -109,7 +111,7 @@ test('before the first read the pane says it is reading', async $ => {
   await ui.unmount()
 })
 
-test('quiet stretches fold, and the button shows every commit', async ($, on) => {
+test('quiet stretches fold when they do not fit, and the button shows every commit', async ($, on) => {
   // Below the tip, seven quiet commits fold into one square; the root (no parent) stays.
   const log =
     Array.from({ length: 9 }, (_, i) =>
@@ -129,7 +131,15 @@ test('quiet stretches fold, and the button shows every commit', async ($, on) =>
   })
 
   await $.command.run({ command: 'branchline' })
-  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+
+  // A tall pane has room for all nine: nothing folds until the button asks.
+  const tall = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  expect(((await tall.find({ type: 'Svg' }))?.props as { alt: string }).alt).toBe('Commit graph: 9 commits on 1 lane.')
+  expect((await tall.find({ key: 'compact' }))?.text).toBe('Fold quiet stretches')
+  await tall.unmount()
+
+  // A short pane folds by itself.
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop', props: { ...PANE.props, scroll: { offset: 0, bodyRows: 10 } } })
 
   const svg = async () => (await ui.find({ type: 'Svg' }))?.props as { alt: string; source: string }
   expect((await svg()).alt).toBe('Commit graph: 3 rows (9 commits, quiet stretches folded) on 1 lane.')

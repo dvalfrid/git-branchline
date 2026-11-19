@@ -46,7 +46,7 @@ export type GraphOptions = {
   width?: number
 }
 
-export type Graph = { source: string; rows: number; alt: string }
+export type Graph = { source: string; rows: number; alt: string; width: number; height: number }
 
 /**
  * The SVG for the first rows of the layout. Rows are dropped until the
@@ -61,7 +61,8 @@ export const graphSvg = (commits: GraphCommit[], layout: Layout, options: GraphO
       const total = commits.reduce((sum, commit) => sum + (commit.count ?? 1), 0)
       const unit = total === commits.length ? 'commits' : `rows (${total} commits, quiet stretches folded)`
       const shown = rows < commits.length ? `the newest ${rows} of ${commits.length} ${unit}` : `${rows} ${unit}`
-      return { source, rows, alt: `Commit graph: ${shown} on ${lanes}.` }
+      const width = options.width ?? WIDTH
+      return { source, rows, alt: `Commit graph: ${shown} on ${lanes}.`, width, height: Math.max(rows, 1) * ROW }
     }
     rows = Math.floor(rows * 0.8)
   }

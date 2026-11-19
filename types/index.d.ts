@@ -19,6 +19,8 @@ export type Branch = {
   isHead: boolean
 }
 
+export type FoldMode = 'auto' | 'fold' | 'expand'
+
 export type Tag = { name: string; sha: string }
 
 export type Commit = {
@@ -52,8 +54,8 @@ declare module 'claude-code' {
   interface PluginState {
     'git-branchline': {
       snapshot: Shaped<Snapshot>
-      /** Fold long chains of quiet commits into one row (on by default). */
-      isCompact: boolean
+      /** Folding of quiet chains: 'auto' folds only when the graph does not fit. */
+      foldMode: FoldMode
     }
   }
 }

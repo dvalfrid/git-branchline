@@ -90,5 +90,12 @@ själv i desktopappen. Sedan steg 7, terminalreserven.
   varje Bash- eller PowerShell-anrop som kör `git`. `/branchline` läser alltid
   om. Kontroller som kommer medan en läsning pågår slås ihop till en till.
   Hookarna på verktygsanrop har `.catch`, så ett fel i modden aldrig stoppar
-  Claudes kommandon. Steg 5 bocka av utan att ha setts med ihopslagna rader i
+  Claudes kommandon. Steg 5 bockades av utan att ha setts med ihopslagna rader i
   appen (det här repot har inga).
+- 2026-11-19: grafen ritas i panelens bredd och hela sin höjd, utan skalning
+  (`width`/`height` på `Svg`), så man går i grafen genom att skrolla panelen.
+  Utan uttrycklig höjd ritades den interaktiva ramen 150 px hög och 150
+  commits krympte till oläsbarhet. Desktop anger panelens storlek i celler:
+  uppmätt 76 celler ≈ 640 px (8,4 px per cell) och en rad ≈ 22 px. Hopslagning
+  sker nu bara när commitarna inte får plats i panelen (`foldMode` `auto`);
+  knappen väljer `fold` eller `expand` för resten av sessionen.

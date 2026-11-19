@@ -1,10 +1,10 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import type { Snapshot } from '../types'
+import type { FoldMode, Snapshot } from '../types'
 import { compactCommits } from './core/compact'
 import { layoutGraph, tipOf } from './core/layout'
-import { graphSvg } from './core/svg'
+import { ROW, graphSvg } from './core/svg'
 import { branchTable, headline } from './core/table'
 import { readRepo, readSignature } from './repo'
 import { createWatcher, runsGit, type Watcher } from './watch'
@@ -21,7 +21,22 @@ const snapshot = atom({ plugin: 'git-branchline', key: 'snapshot' } as const, LO
   shape: 'snapshot-1',
 })
 
-const isCompact = atom({ plugin: 'git-branchline', key: 'isCompact' } as const, true)
+// Folding: 'auto' folds only when the commits do not fit in the pane; the
+// button sets 'fold' or 'expand' for the rest of the session.
+const foldMode = atom({ plugin: 'git-branchline', key: 'foldMode' } as const, 'auto' as FoldMode)
+
+/**
+ * Pixels per pane cell on the desktop app, measured: a pane 76 cells wide
+ * is about 640 px, and a body row about 22 px tall.
+ */
+const PX_PER_COLUMN = 8.4
+const PX_PER_ROW = 22
+
+/** The graph's width in pixels for a pane this many cells wide. */
+const graphWidth = (columns: number): number => Math.max(360, Math.round(columns * PX_PER_COLUMN))
+
+/** Commit rows that fit in the pane beside the headline, button and table header. */
+const rowsThatFit = (bodyRows: number): number => Math.floor((bodyRows * PX_PER_ROW) / ROW) - 6
 
 const refresh = async ($: EngineInterface): Promise<void> => {
   let next: Snapshot
@@ -80,29 +95,35 @@ export const register: Register = on => {
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
     const { Box, Text, Markdown, Svg, Button } = $.ui.resolve(e)
     const shot = await read($, snapshot)
-    const compact = await read($, isCompact)
+    const mode = await read($, foldMode)
 
     if (shot.state === 'loading') return <Text dimColor>Reading the repository…</Text>
     if (shot.state === 'not-repo') return <Text>This session's folder is not a Git repository.</Text>
     if (shot.state === 'error') return <Text>git failed: {shot.message}</Text>
 
-    // The graph where the surface draws SVG and has room; the table everywhere.
+    // The graph where the surface draws SVG; the table everywhere.
     const drawsGraph = (e.surface === 'desktop' || e.surface === 'vscode') && Svg && shot.commits.length > 0
-    const rows = compact ? compactCommits(shot.commits) : shot.commits
+    const fits = shot.commits.length <= rowsThatFit(e.props.scroll.bodyRows)
+    const folded = mode === 'fold' || (mode === 'auto' && !fits)
+    const rows = folded ? compactCommits(shot.commits) : shot.commits
     const graph = drawsGraph
       ? graphSvg(rows, layoutGraph(rows, tipOf(rows, shot.base)), {
           headId: rows.find(commit => commit.refs.some(ref => ref === 'HEAD' || ref.startsWith('HEAD -> ')))?.id,
+          width: graphWidth(e.props.bodyColumns),
         })
       : undefined
-    const folds = rows.length < shot.commits.length || !compact
+    // The button only where folding changes something.
+    const canFold = folded ? rows.length < shot.commits.length : compactCommits(shot.commits).length < shot.commits.length
 
     return (
       <Box flexDirection="column" gap={1}>
         <Markdown text={headline(shot)} />
-        {graph && Svg && <Svg source={graph.source} alt={graph.alt} isInteractive />}
-        {graph && folds && (
-          <Button key="compact" dimColor onPress={() => void update($, isCompact, value => !value)}>
-            {compact ? 'Show every commit' : 'Fold quiet stretches'}
+        {graph && Svg && (
+          <Svg source={graph.source} alt={graph.alt} width={graph.width} height={graph.height} isInteractive />
+        )}
+        {graph && canFold && (
+          <Button key="compact" dimColor onPress={() => void update($, foldMode, () => (folded ? 'expand' : 'fold'))}>
+            {folded ? 'Show every commit' : 'Fold quiet stretches'}
           </Button>
         )}
         <Markdown text={branchTable(shot.branches)} />
