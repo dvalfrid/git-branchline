@@ -1,153 +1,132 @@
 # CLAUDE.md
 
-Startkontext för kodsessioner i det här projektet. Läs den här filen och
-`ROADMAP.md` först i varje session.
+Starting context for coding sessions in this project. Read this file and
+`ROADMAP.md` first in every session.
 
-## Vad det är
+## What it is
 
-**git-branchline** (visningsnamn "Branchline for Claude Code") är en mod (ett plugin) till Claude Code som visar Git-historiken
-för sessionens repo i en panel bredvid chatten: brancher, taggar, remotes, var
-`HEAD` står och hur grenarna ligger mot `main` (före/efter). Panelen ska
-uppdateras av sig själv när historiken ändras: commit, fetch, pull, byte av
-gren, merge.
+**git-branchline** (display name "Branchline for Claude Code") is a Claude
+Code mod (a plugin) that shows the Git history of the session's repository in
+a pane beside the chat: branches, tags, remotes, where `HEAD` is and how the
+branches stand against `main` (ahead/behind). The pane updates by itself when
+the history changes: commit, fetch, pull, checkout, merge.
 
-Idén kom ur en suhf.se-session 2026-11-19, där Claude ritade en
-engångsgraf som widget i chatten (se "Prototypen" nedan). Den var användbar
-men blev en ögonblicksbild som inte uppdateras. Det här projektet ska göra
-samma sak levande.
+The Claude desktop app (Code tab) is the main target; the terminal has a
+simpler fallback, and mobile shows the branch list.
 
-Daniel (ägare) kör främst **Claude-desktopappen på Windows** (Code-fliken),
-ibland terminalen. Desktop är huvudmålet, terminalen ska ha en enkel reserv.
+## How a mod is built (read before writing code)
 
-## Hur en mod byggs (läs innan du skriver kod)
+**Load the `plugin-authoring` skill first in every coding session** (the Skill
+tool). It has the API, examples and where the types are for the Claude Code
+build that is running. Don't guess the API from memory; it changes between
+versions. The types file `.claude-plugin/types/claude-code/index.d.ts` (about
+14,000 lines, written by the engine when it loads the mod) is the reference:
+grep it for `Pane: {`, `'tool.call'`, `$.process`, `Svg` and the like.
 
-**Ladda skillen `plugin-authoring` först i varje kodsession** (Skill-verktyget).
-Den har API:t, exempel och var typerna ligger för just den Claude Code-build
-som körs. Gissa inte API:t ur minnet, det ändras mellan versioner. Typfilen
-`claude-code.d.ts` (cirka 14 000 rader) nämns när skillen laddas: greppa i den
-efter `Pane: {`, `'tool.call'`, `$.process`, `Svg` och liknande.
-
-Grundformen:
+Layout:
 
 ```
 git-branchline/
-  .claude-plugin/plugin.json   { "name": "git-branchline", "version": "0.1.0", "description": "…", "types": "./types/index.d.ts" }
-  hooks/hooks.json             { "modules": ["./register.tsx"] }
-  hooks/register.tsx           export const register: Register = (on, options) => { … }
-  types/index.d.ts             kontraktet för värden i $.state (interface PluginState)
-  hooks/*.test.tsx             tester, körs med `claude plugin test .`
-  hooks/core/*.ts              ren logik utan $ (parsning, layout, text), återanvändbar
-  hooks/repo.ts                läser repot med git via en run-funktion
+  .claude-plugin/plugin.json       the manifest
+  .claude-plugin/marketplace.json  makes the repository installable
+  hooks/hooks.json                 { "modules": ["./register.tsx"] }
+  hooks/register.tsx               hooks, state atoms and drawing
+  hooks/repo.ts                    reads the repository with git through a run function
+  hooks/watch.ts                   cheap change detection and coalesced reloads
+  hooks/core/*.ts                  pure logic without $ (parsing, layout, SVG, text)
+  hooks/**/*.test.ts(x)            tests, run with `claude plugin test .`
+  types/index.d.ts                 the contract for values in $.state (interface PluginState)
 ```
 
-- Varje hook är `($, e, next)`. `$` är motorns gränssnitt (det finns ingen DOM
-  och ingen Node i modulen), `e` är händelsen och `next(e)` låter resten köra.
-- **Panel:** `$.ui.open({ id, title })` öppnar den, och en
-  `on('ui.render', { component: 'Pane', requestId: id }, …)`-hook ritar den.
-  Element hämtas per yta: `const { Box, Text, Svg, Button } = $.ui.resolve(e)`,
-  där `e.surface` är `desktop`, `terminal`, `vscode` eller `mobile`.
-  Mönstret finns i skillens exempel `examples/pane.tsx` och `pane-state.d.ts`.
-- **Tillstånd som ritningen läser:** `atom(ref, initial, { shape })`,
-  `read($, atom)` medan den ritar, `update($, atom, fn)` från andra hooks. En
-  skrivning ritar om panelen. Byt `shape`-taggen när datans form ändras.
-- **Köra git:** `$.process.run({ argv: ['git', '-C', repo, …] })`. Skicka
-  alltid argv som lista, aldrig en sammanfogad shell-sträng.
-- **Slash-kommando:** `$.command.register({ name: 'branchline', … })` i
-  `session.start`, besvaras av en `command.run`-hook.
-- **Timer:** `$.clock.every(…)` (stoppas vid omladdning).
-- Kontroller: `claude plugin validate .`, `tsc -p .` (när typerna lagts ut i
-  `.claude-plugin/types/`) och `claude plugin test .`.
+- Every hook is `($, e, next)`. `$` is the engine interface (there is no DOM
+  and no Node in the module), `e` is the event and `next(e)` lets the rest run.
+- **Pane:** `$.ui.open({ id, title })` opens it, and an
+  `on('ui.render', { component: 'Pane', requestId: id }, …)` hook draws it.
+  Elements come per surface: `const { Box, Text, Svg, Button } = $.ui.resolve(e)`,
+  where `e.surface` is `desktop`, `terminal`, `vscode` or `mobile`.
+- **Row above the prompt:** a `ui.render` hook on `{ component: 'AbovePrompt' }`.
+- **State the drawing reads:** `atom(ref, initial, { shape })`, `read($, atom)`
+  while drawing, `update($, atom, fn)` from other hooks. A write redraws.
+  Change the `shape` tag when the data's shape changes.
+- **Running git:** `$.process.run({ argv: ['git', '-C', repo, …] })`. Always
+  pass argv as a list, never a joined shell string.
+- **Slash command:** `$.command.register({ name: 'branchline', … })` in
+  `session.start`, answered by a `command.run` hook.
+- **Timer:** `$.clock.every(…)` (stopped on reload).
+- Checks: `claude plugin validate .`, `claude plugin test .`, and
+  `tsc -p .` once the engine has written `.claude-plugin/types/`.
 
-### Ladda modden under utveckling
+### Loading the mod during development
 
-- **Terminal:** `claude --plugin-dir D:\Development\git-branchline`. Mappen bevakas
-  och modden laddas om när du sparar.
-- **Desktopappen:** lägg mappen i `CLAUDE_CODE_PLUGIN_DIRS` i `env`-blocket i
-  `~/.claude/settings.json` (inte i ett projekts settings), till exempel
-  `"CLAUDE_CODE_PLUGIN_DIRS": "D:\\Development\\git-branchline"`. Lägg också till
-  `"CLAUDE_CODE_PLUGIN_DIR_WATCH": "1"` om den inte laddas om när du sparar.
-  Avsluta sedan desktopappen helt (Quit i systemfältet) och starta om den:
-  en ny session med + läser inte om inställningen. **Fråga Daniel innan du ändrar
-  `~/.claude/settings.json`.**
-- Fel i en hook syns som en grå rad i transkriptet (`git-branchline: … hook skipped:
-  …`) och i debugloggen (`claude --debug`).
+- **Terminal:** `claude --plugin-dir <path to this folder>`. The folder is
+  watched and the mod reloads when you save.
+- **Desktop app:** add the folder to `CLAUDE_CODE_PLUGIN_DIRS` in the `env`
+  block of `~/.claude/settings.json` (not a project's settings), plus
+  `"CLAUDE_CODE_PLUGIN_DIR_WATCH": "1"`. Then quit the desktop app fully and
+  start it again: a new session with + does not re-read the setting.
+  **Ask the user before changing `~/.claude/settings.json`.**
+- An error in a hook shows as a dim line in the transcript
+  (`git-branchline: … hook skipped: …`) and in the debug log (`claude --debug`).
 
-## Design (utkast, ändra fritt i ROADMAP när det avgörs)
+## Design
 
-**Data:** en körning ger allt som behövs.
+**Data:** a few git calls give everything.
 
 ```
-git for-each-ref --format=%(refname)|%(objectname:short)|%(upstream:short)|%(upstream:track) refs/heads refs/remotes refs/tags
-git log --all --date-order -n 200 --format=%h|%p|%ad|%an|%D|%s --date=short
-git rev-list --left-right --count origin/main...<gren>    (före/efter mot main, per gren)
+git for-each-ref --format=…%(ahead-behind:<base>)… refs/heads refs/remotes refs/tags
+git log --branches --remotes HEAD --date-order -n 200 --format=… (--all when tag-only commits are asked for)
+git rev-list --left-right --count <base>...<branch>   (fallback before git 2.41)
 ```
 
-Använd en avgränsare som inte förekommer i commitmeddelanden (helst `%x1f`,
-inte `|`, som prototypen använde). Parsa till `{ id, parents[], date, author,
-refs[], subject }`.
+Fields are separated with `%x1f` and records with `%x1e`, which do not occur
+in commit messages, and parsed to `{ id, parents[], date, author, refs[], subject }`.
 
-**Layout (filer):** commits nyast överst, en rad var. Varje gren får en bana
-(lane). Tilldela banor genom att gå uppifrån och ned och låta en commit ärva
-sitt barns bana, och ge en ny gren nästa lediga bana. Kanter ritas som raka
-linjer i samma bana och som en böj (path med Q) när de byter bana.
-`main`/förvald gren ligger alltid i bana 0.
+**Layout:** commits newest first, one row each. The base branch's first-parent
+line is lane 0. A commit inherits its child's lane; a new branch gets the next
+free lane. Edges are straight in a lane and bend (a path with Q) where they
+change lanes. Commits are colored by the branch that owns them
+(`hooks/core/owners.ts`), not by lane.
 
-**Komprimering:** en lång följd commits i samma bana utan refs och utan
-förgreningar (typiskt CMS-redigeringar från andra redaktörer) slås ihop till
-en rad: "12 CMS-ändringar (Lars, Linda, …)", ritad som en fyrkant i stället
-för en prick. Det gjorde prototypen läsbar. Gör det valbart.
+**Folding:** a long run of commits in one lane with no refs and no forks
+becomes one row ("12 commits (Lars, Linda, …)"), drawn as a square. It
+happens only when the graph does not fit the pane, and a button toggles it.
 
-**Rita per yta:**
-- `desktop`/`vscode`: ett `Svg`-element (källan får vara upp till 131 072
-  tecken) för grafen, plus en tabell med grenarna: senaste datum, efter main,
-  egna commits, status (öppen, HEAD, sammanslagen, gammal).
-- `terminal`: en textgraf i stil med `git log --graph --oneline` i `Text`.
-- `mobile`: bara grentabellen.
+**Per surface:**
+- `desktop`/`vscode`: an `Svg` element for the graph (source up to 131,072
+  characters), and the Branches tab as SVG strips with buttons.
+- `terminal`: a text graph in the style of `git log --graph --oneline`, and
+  Markdown tables for branches.
+- `mobile`: the branch list only.
 
-**När den uppdateras:**
-1. Efter ett verktygsanrop: en `tool.call`-hook som efter `await next(e)`
-   kollar om ett Bash- eller PowerShell-kommando innehöll `git`, och i så fall
-   läser om.
-2. Polla billigt med `$.clock.every` (till exempel var 5:e sekund): jämför
-   `git rev-parse HEAD` och en hash av `for-each-ref`-utdata, och läs bara om
-   allt när den har ändrats. Det fångar ändringar Daniel gör själv i en
-   terminal eller i GitKraken.
-3. Ett kommando `/branchline` som öppnar panelen och uppdaterar den.
+**When it updates:**
+1. After a tool call: a `tool.call` hook checks, after `await next(e)`,
+   whether a Bash or PowerShell command ran `git`, and reads again if so.
+2. A cheap poll every 5 seconds (`$.clock.every`) compares a fingerprint of
+   refs and `HEAD`, and reads everything only when it changed. That catches
+   changes made in a terminal or another Git client.
+3. `/branchline` opens the pane and reads again.
 
-**Vilket repo:** sessionens arbetsmapp. Hitta roten med
-`git rev-parse --show-toplevel` och visa ett vänligt "inte ett git-repo"
-annars.
+**Which repository:** the session's working folder; the root comes from
+`git rev-parse --show-toplevel`, with a friendly "not a Git repository" otherwise.
 
-## Prototypen
+Lane colors that work in both light and dark mode: gray `#5F5E5A` (base),
+teal `#1D9E75`, coral `#D85A30`, purple `#7F77DD`, pink `#D4537E`, blue `#378ADD`.
 
-Engångsgrafen från suhf.se-sessionen (HTML-widget): en lista `R` med commits
-`{ id, l (bana), m (meddelande), refs, p (föräldrar), d (datum), g (ihopslagen) }`,
-radhöjd 30 px, banbredd 18 px, prickar fyllda när commiten har en ref, refs
-som piller (HEAD i varningsfärg), och en tabell `B` med gren, datum,
-efter/före och status. Banorna sattes för hand där. Det här projektet ska
-räkna ut dem automatiskt.
+## Conventions
 
-Färger per bana som fungerade i både ljust och mörkt läge: grå `#5F5E5A`
-(main), teal `#1D9E75`, korall `#D85A30`, lila `#7F77DD`, rosa `#D4537E` och
-blå `#378ADD`. Ta temafärger från `$.ui`/temat om API:t ger dem.
-
-## Konventioner
-
-- Svenska i dokumentationen, engelska i kod och identifierare.
-- Inga npm-beroenden i själva modden (modulen har ändå ingen Node). Testerna
-  körs med `claude plugin test`.
-- Läsa är ofarligt, men modden ska **aldrig** ändra repot (ingen fetch, inget
-  checkout, ingen push) utan att Daniel uttryckligen bett om en sådan funktion.
-  En automatisk `git fetch` vore bekväm, men den går mot nätet och ändrar
-  remote-refs: om den byggs ska den vara avstängd som standard och kunna slås
-  på via `userConfig`.
-- Undantag som Daniel bett om (2026-11-19): modden får ta bort **sammanslagna
-  lokala** grenar med `git branch -d` (som vägrar osammanslaget arbete), och
-  bara efter två tryck (knapp och bekräftelse). Allt annat som ändrar repot,
-  som `git branch -D` eller att ta bort en gren på origin, lämnas till Claude:
-  knappen fyller bara promptrutan, och Claude kör det med sina vanliga
-  behörighetsfrågor.
-- Håll `ROADMAP.md` aktuell: bocka av steg och skriv beslut där i samma commit.
-- Dela/installera: när Daniel vill det, lägg `.claude-plugin/marketplace.json`
-  och en installationsrad i README (`/plugin install git-branchline --marketplace
-  <owner>/<repo>`), enligt skillens avsnitt "Sharing a mod".
+- English in code, identifiers and documentation.
+- No npm dependencies in the mod (the module has no Node anyway). Tests run
+  with `claude plugin test`.
+- Reading is harmless, but the mod must **never** change the repository (no
+  fetch, no checkout, no push) unless the maintainers have decided on such a
+  feature. An automatic `git fetch` would be convenient, but it goes to the
+  network and changes remote refs: if it is built, it is off by default and
+  turned on through `userConfig`.
+- The one exception: the mod may delete **merged local** branches with
+  `git branch -d` (which refuses unmerged work), and only after two presses
+  (button and confirmation). Everything else that changes the repository,
+  such as `git branch -D` or deleting a branch on a remote, is left to Claude:
+  the button only fills the prompt box, and Claude runs it with its usual
+  permission prompts.
+- Keep `ROADMAP.md` current: tick steps and write decisions there in the same
+  commit, and add user-visible changes to `CHANGELOG.md`.

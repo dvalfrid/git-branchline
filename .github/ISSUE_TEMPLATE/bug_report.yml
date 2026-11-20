@@ -1,0 +1,34 @@
+name: Bug report
+description: Something in the pane is wrong or broken
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you saw, and what you expected instead. A screenshot helps.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How to reproduce
+      description: The repository's shape (branches, merges, tags) matters more than its contents.
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Where
+      options:
+        - Desktop app
+        - Terminal
+        - VS Code
+        - Mobile
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: Output of `claude --version` and `git --version`, and your OS.
+    validations:
+      required: true

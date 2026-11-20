@@ -1,0 +1,6 @@
+{
+  "name": "git-branchline",
+  "description": "Branchline for Claude Code: a live Git history pane beside the chat",
+  "owner": { "name": "Daniel Valfridsson" },
+  "plugins": [{ "name": "git-branchline", "source": "./" }]
+}

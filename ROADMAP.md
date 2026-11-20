@@ -1,184 +1,178 @@
-# ROADMAP
+# Roadmap
 
-## Nu / Next
+## Now / next
 
-Steg 1–8 klara och provade. Kvar: steg 9 (dela), om Daniel vill.
+Steps 1–9 are done. Open questions are below; anything new starts as an issue.
 
-## Steg
+## Steps
 
-- [x] **1. Skelett som laddas**: `plugin.json`, `hooks.json` och en
-      `register.tsx` som öppnar en tom panel "Branchline" och registrerar
-      `/branchline`. Ladda den i desktopappen (se CLAUDE.md) och bekräfta att
-      panelen syns.
-- [x] **2. Läsa repot**: kör git via `$.process.run`, parsa refs och log
-      (avgränsare `%x1f`), spara i en atom. Visa först grentabellen (gren,
-      datum, efter/före main, status).
-- [x] **3. Banlayout**: räkna ut banor automatiskt och testa mot ett fall med
-      merge-commits (två föräldrar) och grenar som gått ihop.
-- [x] **4. SVG-graf på desktop**: prickar, kanter, ref-piller, HEAD markerad.
-- [x] **5. Komprimera** commitföljder utan refs (valbart).
-- [x] **6. Levande uppdatering**: `tool.call`-hook för git-kommandon och
-      polling av HEAD/refs-hash via `$.clock.every`.
-- [x] **7. Terminalreserv**: textgraf för `surface === 'terminal'`.
-- [x] **8. Interaktion** (senare): klick på en commit visar diffstat, klick på
-      en gren frågar Claude om den ("ska den här slås ihop?") via `sendPrompt`
-      eller motsvarande i API:t.
-- [ ] **9. Dela**: marketplace.json och README-installationsrad, om Daniel vill.
+- [x] **1. A skeleton that loads**: `plugin.json`, `hooks.json` and a
+      `register.tsx` that opens an empty "Branchline" pane and registers
+      `/branchline`.
+- [x] **2. Reading the repository**: run git through `$.process.run`, parse
+      refs and log (separator `%x1f`), keep it in an atom. Show the branch
+      table first (branch, date, behind/ahead of main, status).
+- [x] **3. Lane layout**: compute lanes automatically, tested against a case
+      with merge commits (two parents) and branches that joined.
+- [x] **4. SVG graph on desktop**: dots, edges, ref pills, `HEAD` marked.
+- [x] **5. Folding** of commit runs without refs (optional).
+- [x] **6. Live updates**: a `tool.call` hook for git commands and a poll of a
+      `HEAD`/refs fingerprint through `$.clock.every`.
+- [x] **7. Terminal fallback**: a text graph for `surface === 'terminal'`.
+- [x] **8. Interaction**: open a branch to see its commits and files, ask
+      Claude about it, copy its name.
+- [x] **9. Sharing**: `marketplace.json`, an install line in the README,
+      license, contributing guide and CI.
 
-## Öppna frågor
+## Open questions
 
-- Ska grenar som är helt sammanslagna i main döljas som standard?
-- Hur många commits bakåt (200?) och hur långt bakåt i tid för gamla grenar?
-- Automatisk `git fetch`: av som standard. Slå på via `userConfig`?
+- Should branches fully merged into main be hidden by default?
+- How many commits back (200?), and how far back in time for old branches?
+- Automatic `git fetch`: off by default. Turn it on through `userConfig`?
+- Expanding one folded group with a click: split the graph into SVG pieces
+  around each group and put a button on the group's row? Try whether it looks
+  good.
+- The graph shows at most 150 rows. Is a "Show more" button needed to go
+  further back in large repositories?
 
-- Fälla ut en enskild ihopslagen grupp med ett klick: dela grafen i SVG-bitar
-  runt varje grupp och lägg en knapp på gruppens rad? Prova om det ser bra ut.
+## Decisions
 
-- Grafen visar högst 150 rader. Behövs en knapp "Visa fler" för att gå längre
-  bakåt i stora repon?
-
-## Beslut
-
-- 2026-11-19: projektet skapat. Desktopappen på Windows är huvudmålet. Modden
-  läser bara repot och ändrar ingenting i det.
-- 2026-11-19: namnet blev `git-branchline` (visningsnamn "Branchline for
-  Claude Code", kommando `/branchline`, panelrubrik "Branchline"). Mappen
-  heter `D:\Development\git-branchline`. Panelen öppnas vid sessionsstart.
-- 2026-11-19: steg 1 bekräftat, panelen syns i desktopappen. Efter en ändring
-  av `CLAUDE_CODE_PLUGIN_DIRS` måste desktopappen avslutas helt och startas om;
-  en ny session med + räcker inte.
-- 2026-11-19, steg 2: grenarna jämförs med `origin/<förvald gren>` om den finns,
-  annars den lokala förvalda grenen (från `origin/HEAD`, annars main, master,
-  annars HEAD). Före/efter läses med `%(ahead-behind:…)` i ett anrop (git 2.41+),
-  annars en `rev-list` per gren. Status: `base`, `merged` (inga egna commits),
-  `stale` (äldre än 90 dagar), annars `open`; HEAD visas för sig. Fjärrgrenar
-  visas bara när ingen lokal gren följer eller speglar dem. Tabellen ritas som
-  Markdown, som fungerar på alla ytor. Ren logik ligger i `hooks/core/` (utan
-  `$`) så att den kan återanvändas, till exempel i en MCP-server.
-- 2026-11-19, steg 3: `hooks/core/layout.ts` lägger varje commit i en bana.
-  Basgrenens first-parent-linje (från `origin/main` eller `main`) har bana 0
-  ensam. Första föräldern fortsätter i barnets bana; en merges övriga föräldrar
-  får en ny bana om ingen redan väntar på dem. Varje kant har `fromLane`,
-  `viaLane` (banan den går ned i) och `toLane`, så att steg 4 kan rita en böj
-  direkt efter barnet och en vid föräldern. En förälder nedanför de 200
-  commitarna ger en öppen kant (`to` saknas). Testat mot en riktig historik
-  med två merges och en gren från en gren, samma form som `git log --graph`.
-- 2026-11-19, steg 4: `hooks/core/svg.ts` ritar grafen som ett enda SVG-dokument
-  (radhöjd 24 px, banbredd 16 px): prickar i banans färg, större prick för
-  commits med refs, en ring runt HEAD, ref-piller (HEAD i varningsfärg, taggar
-  streckade, `origin/`/`upstream/` utan fyllning), ämne och "författare · datum".
-  Färgerna följer ljust/mörkt läge via `prefers-color-scheme`, eftersom SVG:n
-  visas som bild och inte ärver textfärg. Högst 150 rader, och färre om källan
-  annars blir längre än 131 072 tecken. Grafen ritas på `desktop` och `vscode`;
-  terminal och mobil visar bara grentabellen än så länge.
-- 2026-11-19, steg 5: `hooks/core/compact.ts` slår ihop en kedja av minst 4
-  commits som saknar refs, inte är merges och inte har någon gren som utgår
-  från dem (bara den översta får ha flera barn). Raden visar "N commits",
-  författarna (vanligast först, högst tre) och datumintervallet, och ritas som
-  en fyrkant. Rotcommiten slås aldrig ihop. Komprimeringen är på som standard
-  och slås av och på med en knapp under grafen ("Show every commit" / "Fold
-  quiet stretches"); valet gäller sessionen (`isCompact` i `$.state`).
-- 2026-11-19: hovring i grafen. SVG:n ritas med `isInteractive`, och varje rad
-  har en `<title>` (hash, datum, författare, meddelande, refs) och markeras när
-  pekaren är över den. En ihopslagen rad listar sina commits (högst 30). Klick
-  i grafen når inte modden: SVG:n visas i en ram utan skript, `Client`-moduler
-  kan inte rita `Svg`, och en `Button` tar bara text som innehåll. Att fälla ut
-  en enskild grupp genom att klicka på den kräver att grafen delas upp i bitar
-  med en knapp på den ihopslagna raden (se öppna frågor).
-- 2026-11-19, steg 6: `hooks/watch.ts` läser ett billigt fingeravtryck av repot
-  (alla refs med commit och vilken gren som är utcheckad, plus `HEAD`) och läser
-  om allt bara när det har ändrats. Fingeravtrycket kollas var 5:e sekund
-  (`$.clock.every`, fångar ändringar i terminal och GitKraken) och direkt efter
-  varje Bash- eller PowerShell-anrop som kör `git`. `/branchline` läser alltid
-  om. Kontroller som kommer medan en läsning pågår slås ihop till en till.
-  Hookarna på verktygsanrop har `.catch`, så ett fel i modden aldrig stoppar
-  Claudes kommandon. Steg 5 bockades av utan att ha setts med ihopslagna rader i
-  appen (det här repot har inga).
-- 2026-11-19: grafen ritas i panelens bredd och hela sin höjd, utan skalning
-  (`width`/`height` på `Svg`), så man går i grafen genom att skrolla panelen.
-  Utan uttrycklig höjd ritades den interaktiva ramen 150 px hög och 150
-  commits krympte till oläsbarhet. Desktop anger panelens storlek i celler:
-  uppmätt 76 celler ≈ 640 px (8,4 px per cell) och en rad ≈ 22 px. Hopslagning
-  sker nu bara när commitarna inte får plats i panelen (`foldMode` `auto`);
-  knappen väljer `fold` eller `expand` för resten av sessionen.
-- 2026-11-19: grentabellen delas i grupper, i den här ordningen: Active (HEAD,
-  basen och osammanslagna lokala grenar med en commit de senaste 14 dagarna),
-  Local and remote (övriga lokala som också finns på en remote), Remote only
-  och Old local (övriga lokala). Varje grupp har en rubrik som fäller ihop och
-  ut den; Old local är ihopfälld från början. Grenarna ligger nu **ovanför**
-  grafen, så att grafen inte flyttar dem när den växer. Daniel ville helst dela
-  panelen i en övre del för grafen och en nedre för grenarna, med var sin
-  rullning, men en `Box` kan inte rulla på höjden (bara `overflow: hidden`),
-  så hela panelen rullar som en.
-- 2026-11-19: grafen ritas 48 px smalare än panelens uppmätta bredd (marginal
-  och rullist) och förankras upptill, så att den inte skalas ned och centreras
-  med ett tomrum ovanför. En lokal gren och dess `origin/`-kopia på samma
-  commit visas som ett piller (`main ⇅`). Piller som skulle gå in i författare
-  och datum ersätts med `+N`.
-- 2026-11-19: panelen har två flikar, **Graph** och **Branches (N)**, som
-  knappar under rubrikraden (vald flik som `primary`). Valet gäller sessionen
-  (`view` i `$.state`). Grenarna ritas som SVG per grupp
-  (`hooks/core/branches-svg.ts`): en prick i grenens färg i grafen, namnet
-  (HEAD som piller, `⇅` när grenen också finns på en remote), ålder i ord
-  ("3 days ago"), en stapel för efter (grå, åt vänster) och före (grenens
-  färg, åt höger) med logaritmisk längd, och ett färgat statuschip. Hovring
-  visar sha, datum, uppströmsgren och före/efter. I terminalen, som saknar
-  `Svg`, är grupperna kvar som Markdown-tabeller.
-- 2026-11-19, steg 8: varje gren i fliken Branches är en egen rad (en SVG-remsa)
-  med en knapp `›` till höger, eftersom klick inte når in i en SVG. Knappen
-  öppnar grenen: modden läser `git log base..gren` (högst 15 commits) och
-  `git diff --numstat base...gren` (de 10 mest ändrade filerna), och visar dem
-  under raden. **Ask Claude about it** fyller promptrutan med en fråga om
-  grenen (innehåll, redo att slås ihop, behöver uppdateras, kan tas bort) som
-  slutar med "Don't change anything yet." Den skickas inte, Daniel trycker
-  själv. **Copy name** kopierar grennamnet. Klick på commits i grafen går
-  fortfarande inte; där finns hovringen.
-- 2026-11-19, steg 7: i terminalen ritar fliken Graph en textgraf
-  (`hooks/core/textgraph.ts`) i stil med `git log --graph`: en rad per commit
-  (`●`, `◉` för HEAD, `■` för en ihopslagen rad) och en mellanrad bara där en
-  kant byter bana, ritad med rundade boxtecken (`╭ ╮ ╰ ╯ ├ ┤ ┼`). Varje bana
-  har sin färg (mains grå något ljusare för mörk terminal), refs skrivs som
-  `(HEAD → main ⇅, tag: v1)` och författare och datum dämpat sist. Samma
-  banlayout och hopslagning som på desktop. På mobilen visar Graph-fliken
-  bara en hänvisning till Branches.
-- 2026-11-19: ta bort grenar från fliken Branches. En öppnad lokal gren utan
-  egna commits (0 före basen) får **Delete branch**, som frågar "Delete x?
-  Everything on it is merged." och sedan kör `git branch -d -- x`. En lokal
-  gren med egna commits får **Delete via Claude…** och en gren som finns på en
-  remote **Delete on origin via Claude…**; båda fyller bara promptrutan med en
-  fråga som ber Claude visa vad som skulle försvinna och fråga innan. Gruppen
-  Old local har **Delete merged branches (N)…**, som listar grenarna och tar
-  bort dem efter bekräftelse, en i taget, och säger vilka git vägrade.
-  Resultatet visas överst i fliken, och panelen läser om repot efteråt. HEAD
-  och basgrenen kan inte tas bort härifrån.
-- 2026-11-19: grafen färgas per **gren**, inte per bana (`hooks/core/owners.ts`).
-  Varje commit tillhör den första gren som når den längs första föräldern:
-  basgrenen först, sedan HEAD:s gren, sedan övriga uppifrån. Commits som ingen
-  gren når (en sammanslagen och borttagen gren) får namn ur merge-commitens
-  meddelande ("Merge branch 'x'", "Merge pull request #n from x"). En
-  first-parent-kant hör till barnets gren, en merge-kant till grenen den tar
-  in. Basen är grå, övriga får färgerna i tur och ordning, och samma färg
-  används i terminalgrafen och för pricken i fliken Branches. Hovring över en
-  grens linje eller prick tonar ned de andra och visar grenens namn. Där en
-  gren börjar står `↳ namn` i dess färg på raden.
-- 2026-11-19: panelen öppnas bara när en yta är ansluten: vid sessionsstart om
-  någon finns, annars när den första ansluter (`session.attach`), en gång per
-  laddning. Tidigare gav en session utan ansluten app felet `no-surface`.
-- 2026-11-19: grafen läser som standard bara det grenar, remote-grenar och
-  HEAD når (`git log --branches --remotes HEAD`), inte `--all`. Commits som
-  bara en tagg håller vid liv (i rig-dashboard: testbyggena `v1.54.0-rc.1–5`,
-  merge-commits av main och #726 som aldrig hamnade på någon gren) syns inte
-  förrän man trycker **Show tag-only commits**. Taggar på commits som finns på
-  grenar syns som förut. Med knappen på får sådana linjer taggens namn ("…
-  (tag only, on no branch)" vid hovring), och en commit som en merge tagit in
-  utan grennamn i meddelandet får pull requestens nummer (`#726`) i stället
-  för "merged branch".
-- 2026-11-20: API:t har ingen plats för en egen ikon i desktopappens
-  verktygsfält eller sidofält. I stället ritar modden en rad ovanför
-  promptrutan (`AbovePrompt`) med knappen **Branchline** och den utcheckade
-  grenen bredvid (`feature/x · 2 ahead, 1 behind origin/main`). Raden syns
-  bara när panelen är stängd och sessionen ligger i ett git-repo. Att panelen
-  är öppen hålls i `paneUp`: sätts när modden öppnar den, nollas av en
-  `ui.close`-hook, och läses om från `$.ui.panes()` vid omladdning. Testkitet
-  kan inte stänga en panel som en person gör; `ui.close`-vägen provades för
-  hand i desktopappen 2026-11-20 och fungerar.
+- 2026-11-19: project created. The desktop app is the main target. The mod
+  only reads the repository and changes nothing in it.
+- 2026-11-19: the name is `git-branchline` (display name "Branchline for
+  Claude Code", command `/branchline`, pane title "Branchline"). The pane
+  opens at session start.
+- 2026-11-19: after changing `CLAUDE_CODE_PLUGIN_DIRS`, the desktop app must
+  be quit fully and started again; a new session with + is not enough.
+- 2026-11-19, step 2: branches are compared with `origin/<default branch>` if
+  it exists, else the local default branch (from `origin/HEAD`, else main,
+  master, else HEAD). Ahead/behind is read with `%(ahead-behind:…)` in one call
+  (git 2.41+), else one `rev-list` per branch. Status: `base`, `merged` (no
+  commits of its own), `stale` (older than 90 days), else `open`; HEAD is shown
+  separately. Remote branches are shown only when no local branch tracks or
+  mirrors them. Pure logic lives in `hooks/core/` (without `$`) so it can be
+  reused, for example in an MCP server.
+- 2026-11-19, step 3: `hooks/core/layout.ts` puts each commit in a lane. The
+  base branch's first-parent line (from `origin/main` or `main`) has lane 0 to
+  itself. The first parent continues in the child's lane; a merge's other
+  parents get a new lane unless one is already waiting for them. Each edge has
+  `fromLane`, `viaLane` (the lane it runs down) and `toLane`, so the drawing
+  can bend right after the child and again at the parent. A parent below the
+  200 commits gives an open edge (no `to`). Tested against a real history with
+  two merges and a branch off a branch, the same shape as `git log --graph`.
+- 2026-11-19, step 4: `hooks/core/svg.ts` draws the graph as one SVG document
+  (row height 24 px, lane width 16 px): dots in the branch color, a larger dot
+  for commits with refs, a ring around HEAD, ref pills (HEAD in the warning
+  color, tags dashed, `origin/`/`upstream/` unfilled), subject and "author ·
+  date". Colors follow light/dark mode through `prefers-color-scheme`, since
+  the SVG is shown as an image and does not inherit the text color. At most
+  150 rows, fewer if the source would pass 131,072 characters.
+- 2026-11-19, step 5: `hooks/core/compact.ts` folds a chain of at least 4
+  commits that have no refs, are not merges and have no branch leaving them
+  (only the top one may have several children). The row shows "N commits",
+  the authors (most frequent first, at most three) and the date range, drawn
+  as a square. The root commit is never folded.
+- 2026-11-19: hover in the graph. The SVG is drawn with `isInteractive`, and
+  each row has a `<title>` (hash, date, author, message, refs) and is
+  highlighted under the pointer. A folded row lists its commits (at most 30).
+  Clicks in the graph do not reach the mod: the SVG is shown in a frame
+  without scripts, and a `Button` only takes text. Expanding a single group by
+  clicking it would need the graph split into pieces with a button on the
+  folded row (see open questions).
+- 2026-11-19, step 6: `hooks/watch.ts` reads a cheap fingerprint of the
+  repository (every ref with its commit, the checked-out branch, and `HEAD`)
+  and reads everything again only when it changed. The fingerprint is checked
+  every 5 seconds and right after every Bash or PowerShell call that runs
+  `git`. `/branchline` always reads again. Checks that arrive during a read are
+  coalesced into one more. The tool-call hooks have `.catch`, so an error in
+  the mod never stops Claude's commands.
+- 2026-11-19: the graph is drawn at the pane's width and its full height,
+  without scaling (`width`/`height` on `Svg`), so you move through the graph by
+  scrolling the pane. Without an explicit height the interactive frame was
+  150 px tall and 150 commits shrank to unreadable. The desktop app gives the
+  pane's size in cells: measured, 76 cells ≈ 640 px (8.4 px per cell) and a row
+  ≈ 22 px. Folding happens only when the commits do not fit the pane
+  (`foldMode` `auto`); the button picks `fold` or `expand` for the rest of the
+  session.
+- 2026-11-19: the branch table is split into groups, in this order: Active
+  (HEAD, the base, and unmerged local branches with a commit in the last 14
+  days), Local and remote (other local branches that are also on a remote),
+  Remote only, and Old local (the remaining local ones). Each group has a
+  header that folds it; Old local starts folded. A pane split into a graph
+  half and a branches half, each scrolling on its own, was wanted, but a `Box`
+  cannot scroll vertically (only `overflow: hidden`), so the whole pane
+  scrolls as one; tabs are used instead.
+- 2026-11-19: the graph is drawn 48 px narrower than the pane's measured width
+  (padding and scroll bar) and anchored at the top, so it is not scaled down
+  and centered with a gap above it. A local branch and its `origin/` copy on
+  the same commit show as one pill (`main ⇅`). Pills that would run into the
+  author and date are replaced with `+N`.
+- 2026-11-19: the pane has two tabs, **Graph** and **Branches (N)**, as buttons
+  under the headline (the selected one as `primary`), kept for the session
+  (`view` in `$.state`). Branches are drawn as SVG per group
+  (`hooks/core/branches-svg.ts`): a dot in the branch's graph color, the name
+  (HEAD as a pill, `⇅` when the branch is also on a remote), age in words ("3
+  days ago"), a bar for behind (gray, to the left) and ahead (the branch color,
+  to the right) on a log scale, and a colored status chip. In the terminal,
+  which has no `Svg`, the groups are Markdown tables.
+- 2026-11-19, step 8: each branch in the Branches tab is its own row (an SVG
+  strip) with a `›` button on the right, since clicks do not reach into an
+  SVG. The button opens the branch: the mod reads `git log base..branch` (at
+  most 15 commits) and `git diff --numstat base...branch` (the 10 most changed
+  files) and shows them under the row. **Ask Claude about it** fills the
+  prompt box with a question about the branch (contents, ready to merge, needs
+  updating, can be deleted) that ends "Don't change anything yet." It is not
+  sent; the user sends it. **Copy name** copies the branch name.
+- 2026-11-19, step 7: in the terminal the Graph tab draws a text graph
+  (`hooks/core/textgraph.ts`) in the style of `git log --graph`: a line per
+  commit (`●`, `◉` for HEAD, `■` for a folded row) and a connecting line only
+  where an edge changes lanes, drawn with rounded box characters
+  (`╭ ╮ ╰ ╯ ├ ┤ ┼`). Refs are written as `(HEAD → main ⇅, tag: v1)`, with author
+  and date dimmed last. On mobile the Graph tab points to Branches.
+- 2026-11-19: deleting branches from the Branches tab. An opened local branch
+  with no commits of its own (0 ahead of the base) gets **Delete branch**,
+  which asks "Delete x? Everything on it is merged." and then runs
+  `git branch -d -- x`. A local branch with commits of its own gets **Delete
+  via Claude…**, and a branch on a remote **Delete on origin via Claude…**;
+  both only fill the prompt box with a question asking Claude to show what
+  would be lost and ask first. The Old local group has **Delete merged branches
+  (N)…**, which lists the branches and deletes them after confirmation, one at
+  a time, and says which ones git refused. HEAD and the base cannot be deleted
+  from here.
+- 2026-11-19: the graph is colored per **branch**, not per lane
+  (`hooks/core/owners.ts`). Each commit belongs to the first branch that
+  reaches it along first parents: the base first, then HEAD's branch, then the
+  others from the top. Commits no branch reaches (a merged and deleted branch)
+  get a name from the merge commit's message ("Merge branch 'x'", "Merge pull
+  request #n from x"). A first-parent edge belongs to the child's branch, a
+  merge edge to the branch it brings in. The same colors are used in the
+  terminal graph and for the dot in the Branches tab. Hovering a branch's line
+  or dot dims the others and shows its name. Where a branch starts, `↳ name`
+  is written in its color.
+- 2026-11-19: the pane opens only when a surface is attached: at session start
+  if one is there, otherwise when the first one attaches (`session.attach`),
+  once per load. Before, a session with no attached app gave a `no-surface`
+  error.
+- 2026-11-19: by default the graph reads only what branches, remote branches
+  and HEAD reach (`git log --branches --remotes HEAD`), not `--all`. Commits
+  only a tag keeps alive (for example release-candidate builds tagged on
+  merges that never landed on a branch) are hidden until **Show tag-only
+  commits** is pressed. Tags on commits that are on branches show as before.
+  With the button on, such lines are named after their tag ("… (tag only, on
+  no branch)" on hover), and a commit a merge brought in without a branch name
+  in its message gets the pull request number (`#726`) instead of "merged
+  branch".
+- 2026-11-20: the API has no place for a mod's own icon in the desktop app's
+  toolbar or sidebar. Instead the mod draws a row above the prompt
+  (`AbovePrompt`) with a **Branchline** button and the checked-out branch
+  beside it (`feature/x · 2 ahead, 1 behind origin/main`). The row shows only
+  while the pane is closed and the session is in a Git repository. Whether the
+  pane is open is kept in `paneUp`: set when the mod opens it, cleared by a
+  `ui.close` hook, and read again from `$.ui.panes()` on reload. The test kit
+  cannot close a pane the way a person does; the `ui.close` path was tried by
+  hand in the desktop app and works.
+- 2026-11-20: published as open source under the MIT license, with English
+  documentation, at `dvalfrid/git-branchline`. The repository is its own
+  marketplace (`.claude-plugin/marketplace.json`). CI runs
+  `claude plugin validate` and `claude plugin test` on every push and pull
+  request.
