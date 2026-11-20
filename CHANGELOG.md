@@ -5,6 +5,7 @@ All notable changes are listed here. Versions follow
 
 ## Unreleased
 
+- All the pane's buttons are in one row under the headline.
 - An icon for the plugin directory (`.claude-plugin/icon.png`, drawn from`n  `assets/icon.svg`).
 - An animated picture of the graph in the README (`docs/branchline.gif`).
 - A website at https://git-branchline.codeby.se, served by GitHub Pages from `docs/`.

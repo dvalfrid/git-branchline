@@ -244,8 +244,15 @@ export const register: Register = on => {
     const colorOfEdge = (edge: (typeof layout.edges)[number]) => { const o = edgeOwner(edge, rowIds, owners); return o === undefined ? edge.viaLane : owners.owners[o]!.color }
     const width = graphWidth(e.props.bodyColumns)
 
-    const tabs = (
-      <Box flexDirection="row" gap={1}>
+    const onGraph = tab === 'graph' && shot.commits.length > 0 && e.surface !== 'mobile'
+    // The fold button only where folding changes something.
+    const canFold = folded
+      ? rows.length < shot.commits.length
+      : compactCommits(shot.commits).length < shot.commits.length
+
+    // One row of buttons under the headline: the tabs, then what the Graph tab can change.
+    const toolbar = (
+      <Box flexDirection="row" flexWrap="wrap" columnGap={1} rowGap={1}>
         {(['graph', 'branches'] as const).map(id => (
           <Button
             key={`tab-${id}`}
@@ -255,32 +262,12 @@ export const register: Register = on => {
             {id === 'graph' ? 'Graph' : `Branches (${shot.branches.length})`}
           </Button>
         ))}
-      </Box>
-    )
-
-    return (
-      <Box flexDirection="column" gap={1}>
-        <Markdown text={headline(shot)} />
-        {tabs}
-        {tab === 'graph' ? graphTab() : branchesTab()}
-      </Box>
-    )
-
-    function graphTab() {
-      if (shot.state !== 'ok' || shot.commits.length === 0) return <Text dimColor>No commits yet.</Text>
-      if (e.surface === 'mobile') return <Text dimColor>The graph is drawn in the desktop app, VS Code and the terminal; the branches are under Branches.</Text>
-      const headId = rows.find(commit => commit.refs.some(ref => ref === 'HEAD' || ref.startsWith('HEAD -> ')))?.id
-      // The button only where folding changes something.
-      const canFold = folded
-        ? rows.length < shot.commits.length
-        : compactCommits(shot.commits).length < shot.commits.length
-      const foldButton = (
-        <Box flexDirection="row" flexWrap="wrap" columnGap={1}>
-          {canFold && (
-            <Button key="compact" dimColor onPress={() => void update($, foldMode, () => (folded ? 'expand' : 'fold'))}>
-              {folded ? 'Show every commit' : 'Fold quiet stretches'}
-            </Button>
-          )}
+        {onGraph && canFold && (
+          <Button key="compact" dimColor onPress={() => void update($, foldMode, () => (folded ? 'expand' : 'fold'))}>
+            {folded ? 'Show every commit' : 'Fold quiet stretches'}
+          </Button>
+        )}
+        {onGraph && (
           <Button
             key="tag-only"
             dimColor
@@ -290,15 +277,27 @@ export const register: Register = on => {
           >
             {tagOnly ? 'Hide tag-only commits' : 'Show tag-only commits'}
           </Button>
-        </Box>
-      )
+        )}
+      </Box>
+    )
 
+    return (
+      <Box flexDirection="column" gap={1}>
+        <Markdown text={headline(shot)} />
+        {toolbar}
+        {tab === 'graph' ? graphTab() : branchesTab()}
+      </Box>
+    )
+
+    function graphTab() {
+      if (shot.state !== 'ok' || shot.commits.length === 0) return <Text dimColor>No commits yet.</Text>
+      if (e.surface === 'mobile') return <Text dimColor>The graph is drawn in the desktop app, VS Code and the terminal; the branches are under Branches.</Text>
+      const headId = rows.find(commit => commit.refs.some(ref => ref === 'HEAD' || ref.startsWith('HEAD -> ')))?.id
       if (e.surface === 'terminal' || !Svg) {
         // The terminal draws no SVG: a text graph, a line per commit.
         const lines = textGraph(rows, layout, { headId, edgeColor: colorOfEdge, rowColor: colorOfCommit })
         return (
           <Box flexDirection="column">
-            {foldButton}
             {lines.map((line, i) => (
               <Text key={`line-${i}`} wrap="truncate-end">
                 {line.graph.map(span => (span.lane === undefined ? span.text : <Text color={termColor(span.lane)}>{span.text}</Text>))}
@@ -313,12 +312,7 @@ export const register: Register = on => {
       }
 
       const graph = graphSvg(rows, layout, { headId, width, owners })
-      return (
-        <Box flexDirection="column" gap={1}>
-          {foldButton}
-          <Svg source={graph.source} alt={graph.alt} width={graph.width} height={graph.height} isInteractive />
-        </Box>
-      )
+      return <Svg source={graph.source} alt={graph.alt} width={graph.width} height={graph.height} isInteractive />
     }
 
     /** `(HEAD → main ⇅, v1) ` with HEAD in the warning color, as git log decorates. */

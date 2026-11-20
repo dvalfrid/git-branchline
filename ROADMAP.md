@@ -176,3 +176,14 @@ Steps 1–9 are done. Open questions are below; anything new starts as an issue.
   marketplace (`.claude-plugin/marketplace.json`). CI runs
   `claude plugin validate` and `claude plugin test` on every push and pull
   request.
+- 2026-11-21: all the pane's buttons are in one row under the headline: the
+  two tabs, then (on the Graph tab) **Fold quiet stretches** and **Show
+  tag-only commits**. A header that stays put while the content scrolls was
+  wanted, but a Pane has no sticky part, and both ways tried fell short in the
+  desktop app. Scrolling the content itself (a `ui.scroll` hook and a cropped
+  SVG) got no scroll events while the tree fit the pane, and swapping the
+  SVG's source on every step made the pane flash. A header drawn over the
+  content (`position="absolute"` at `top={scroll.offset}`) followed the
+  scroll only after each redraw, so it jumped. So the header scrolls with
+  the content, until the API offers buttons in a pane's own title bar or a
+  part that does not scroll.

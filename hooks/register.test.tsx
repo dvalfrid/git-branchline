@@ -480,3 +480,38 @@ test('no row above the prompt outside a Git repository', async ($, on) => {
   expect(await band.find({ key: 'open-pane' })).toBeUndefined()
   await band.unmount()
 })
+
+test('every button sits in one row under the headline', async ($, on) => {
+  const log =
+    Array.from({ length: 9 }, (_, i) =>
+      row(`c${i}`, i < 8 ? `c${i + 1}` : '', '2026-11-01', 'Lars', i === 0 ? 'HEAD -> main' : '', `edit ${i}`),
+    ).join(RS + '\n') + RS
+  on('command.register', () => ({ value: { command: 'branchline' } }))
+  on('ui.open', () => ({ value: { isPlaced: true } }))
+  on('process.run', (_, e) => {
+    const args = e.argv.join(' ')
+    if (args.includes(' log ')) return { value: { exitCode: 0, stdout: log, stderr: '' } }
+    if (args.includes('ahead-behind')) return { value: { exitCode: 0, stdout: row('refs/heads/main', '0 0'), stderr: '' } }
+    if (args.includes('for-each-ref')) {
+      return { value: { exitCode: 0, stdout: row('refs/heads/main', 'c0', '', '2026-11-01', '*'), stderr: '' } }
+    }
+    if (args.includes('symbolic-ref')) return { value: { exitCode: 1, stdout: '', stderr: '' } }
+    return { value: fakeGit(e.argv) }
+  })
+
+  await $.command.run({ command: 'branchline' })
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop', props: { ...PANE.props, scroll: { offset: 0, bodyRows: 10 } } })
+  await ui.press({ key: 'compact' })
+
+  const svg = async () => (await ui.find({ type: 'Svg' }))?.props as { source: string; height: number }
+  expect((await svg()).height).toBe(9 * 24)
+
+  // Every button sits in one row: the tabs, then what the Graph tab can change.
+  expect((await ui.findAll({ type: 'Button' })).map(button => button.text)).toEqual([
+    'Graph',
+    'Branches (1)',
+    'Fold quiet stretches',
+    'Show tag-only commits',
+  ])
+  await ui.unmount()
+})
