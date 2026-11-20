@@ -429,3 +429,54 @@ test('the graph reads branch history only, until tag-only commits are asked for'
   expect((await ui.find({ key: 'tag-only' }))?.text).toBe('Hide tag-only commits')
   await ui.unmount()
 })
+
+const BAND = {
+  plugin: 'git-branchline',
+  component: 'AbovePrompt',
+  requestId: 'band',
+  props: { hasSurvey: false, isCollapsed: false, isWorking: false, maxRows: 10, bodyColumns: 80, scroll: { offset: 0, bodyRows: 10 }, view: {} },
+} as const
+
+test('a row above the prompt opens the pane while it is closed', async ($, on) => {
+  let panes: { id: string; title: string; isShown: boolean; isFocused: boolean; isPlaced: boolean }[] = []
+  on('command.register', () => ({ value: { command: 'branchline' } }))
+  on('session.surfaces', () => ({ value: [] }))
+  on('ui.open', () => ({ value: { isPlaced: true } }))
+  on('ui.panes', () => ({ value: panes }))
+  on('session.start', (_, e) => ({ cwd: e.cwd }))
+  on('process.run', (_, e) => ({ value: fakeGit(e.argv) }))
+  // Beneath the plugin the engine draws no row of its own.
+  on('ui.render', { component: 'AbovePrompt' }, ($, e) => { const { Box } = $.ui.resolve(e); return <Box /> })
+
+  // The session starts with the pane closed: the row offers it, with the checked-out branch.
+  await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
+  await settle()
+  const band = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect((await band.find({ key: 'open-pane' }))?.text).toBe('Branchline')
+  expect((await band.find({ type: 'Text', text: /main/ }))?.text).toBe('main')
+
+  // Pressed: the pane opens and the row goes.
+  await band.press({ key: 'open-pane' })
+  expect(await band.find({ key: 'open-pane' })).toBeUndefined()
+
+  // A reload that finds the pane still up keeps the row away.
+  panes = [{ id: 'branchline', title: 'Branchline', isShown: true, isFocused: false, isPlaced: true }]
+  await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
+  await settle()
+  expect(await band.find({ key: 'open-pane' })).toBeUndefined()
+  await band.unmount()
+})
+
+test('no row above the prompt outside a Git repository', async ($, on) => {
+  on('command.register', () => ({ value: { command: 'branchline' } }))
+  on('session.surfaces', () => ({ value: [] }))
+  on('ui.panes', () => ({ value: [] }))
+  on('session.start', (_, e) => ({ cwd: e.cwd }))
+  on('process.run', () => ({ value: { exitCode: 128, stdout: '', stderr: 'fatal: not a git repository' } }))
+  on('ui.render', { component: 'AbovePrompt' }, ($, e) => { const { Box } = $.ui.resolve(e); return <Box /> })
+  await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
+  await settle()
+  const band = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await band.find({ key: 'open-pane' })).toBeUndefined()
+  await band.unmount()
+})

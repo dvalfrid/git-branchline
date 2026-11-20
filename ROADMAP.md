@@ -173,3 +173,12 @@ Steg 1–8 klara och provade. Kvar: steg 9 (dela), om Daniel vill.
   (tag only, on no branch)" vid hovring), och en commit som en merge tagit in
   utan grennamn i meddelandet får pull requestens nummer (`#726`) i stället
   för "merged branch".
+- 2026-11-20: API:t har ingen plats för en egen ikon i desktopappens
+  verktygsfält eller sidofält. I stället ritar modden en rad ovanför
+  promptrutan (`AbovePrompt`) med knappen **Branchline** och den utcheckade
+  grenen bredvid (`feature/x · 2 ahead, 1 behind origin/main`). Raden syns
+  bara när panelen är stängd och sessionen ligger i ett git-repo. Att panelen
+  är öppen hålls i `paneUp`: sätts när modden öppnar den, nollas av en
+  `ui.close`-hook, och läses om från `$.ui.panes()` vid omladdning. Testkitet
+  kan inte stänga en panel som en person gör, så `ui.close`-vägen är bara
+  provad för hand.

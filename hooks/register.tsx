@@ -9,7 +9,7 @@ import { LANE_COLORS, ROW, graphSvg, pills } from './core/svg'
 import { textGraph } from './core/textgraph'
 import { branchListSvg } from './core/branches-svg'
 import { askPrompt, canDeleteHere, deletePrompt, detailsMarkdown } from './core/details'
-import { branchTable, groupBranches, headline } from './core/table'
+import { bandStatus, branchTable, groupBranches, headline } from './core/table'
 import { deleteBranches, readBranchDetails, readRepo, readSignature } from './repo'
 import { createWatcher, runsGit, type Watcher } from './watch'
 
@@ -120,6 +120,15 @@ const watch = ($: EngineInterface): Watcher =>
     () => refresh($),
   ))
 
+// Whether the pane is open; the row above the prompt offers to open it while not.
+const paneUp = atom({ plugin: 'git-branchline', key: 'paneUp' } as const, false)
+
+/** Opens (or brings back) the pane and remembers that it is up. */
+const showPane = async ($: EngineInterface): Promise<void> => {
+  await $.ui.open({ id: PANE, title: TITLE })
+  await update($, paneUp, () => true)
+}
+
 // The pane opens by itself once per load: at session start when a surface is
 // there, else when the first one attaches (the desktop app may connect after
 // the session has started). Opening with none attached is refused.
@@ -127,7 +136,7 @@ let hasOpened = false
 const openPane = async ($: EngineInterface): Promise<void> => {
   if (hasOpened || (await $.session.surfaces()).length === 0) return
   hasOpened = true
-  await $.ui.open({ id: PANE, title: TITLE }).catch(() => {
+  await showPane($).catch(() => {
     hasOpened = false
   })
 }
@@ -143,6 +152,10 @@ export const register: Register = on => {
       name: 'branchline',
       description: "Show the Git history of this session's repo in a pane",
     })
+    // A reload keeps a pane that was up: ask the engine rather than guess.
+    void $.ui.panes()
+      .then(panes => update($, paneUp, () => panes.some(pane => pane.id === PANE)))
+      .catch(() => undefined)
     void openPane($)
     void watch($).check(true)
 
@@ -152,10 +165,41 @@ export const register: Register = on => {
   })
 
   on('command.run', { command: 'branchline' }, async $ => {
-    await $.ui.open({ id: PANE, title: TITLE })
+    await showPane($)
     await watch($).check(true)
 
     return { text: 'Branchline updated.' }
+  })
+
+  // Closed by the person (or dropped by a reload): the row above the prompt comes back.
+  on('ui.close', async ($, e, next) => {
+    const closed = await next(e)
+    if (e.id === PANE) await update($, paneUp, () => false)
+    return closed
+  })
+
+  // While the pane is closed, a row above the prompt opens it, with the
+  // checked-out branch beside the button. Nothing outside a Git repository.
+  on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
+    if (e.props.hasSurvey || (await read($, paneUp))) return next(e)
+    const shot = await read($, snapshot)
+    if (shot.state !== 'ok') return next(e)
+    const { Box, Button, Text } = $.ui.resolve(e)
+    return (
+      <Box flexDirection="row" gap={1}>
+        <Button
+          key="open-pane"
+          onPress={() =>
+            void showPane($)
+              .then(() => watch($).check(true))
+              .catch(error => $.ui.toast(`Branchline: ${error instanceof Error ? error.message : String(error)}`))
+          }
+        >
+          Branchline
+        </Button>
+        <Text dimColor wrap="truncate-end">{bandStatus(shot)}</Text>
+      </Box>
+    )
   })
 
   // Claude's own git commands: look right after they finish instead of

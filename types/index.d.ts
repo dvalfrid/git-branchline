@@ -105,6 +105,8 @@ declare module 'claude-code' {
       pendingDelete: PendingDelete | null
       /** The outcome of the last delete, shown above the branches. */
       notice: Notice | null
+      /** Whether the pane is open: the row above the prompt shows only while it is not. */
+      paneUp: boolean
     }
   }
 }

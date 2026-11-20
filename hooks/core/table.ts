@@ -12,7 +12,26 @@ export const headline = (snapshot: Ok): string => {
   return parts.join(' · ')
 }
 
-/** The branch table as markdown, or a sentence when there are no branches. */
+/**
+ * One short line for the row above the prompt: the checked-out branch and
+ * how it stands against the base, `feature/x · 2 ahead, 1 behind origin/main`.
+ */
+export const bandStatus = (snapshot: Ok): string => {
+  const branch = snapshot.branches.find(b => b.isHead && b.kind === 'local')
+  if (!branch) return `HEAD ${snapshot.head}`
+  if (branch.status === 'base' || !snapshot.base || branch.ahead === undefined || branch.behind === undefined) return branch.name
+  const parts = [
+    branch.ahead > 0 ? `${branch.ahead} ahead` : '',
+    branch.behind > 0 ? `${branch.behind} behind` : '',
+  ].filter(Boolean)
+  return `${branch.name} · ${parts.length > 0 ? `${parts.join(', ')} ${snapshot.base}` : `even with ${snapshot.base}`}`
+}
+
+/** The branch table as markdown'@
+$r="$root\hooks\register.tsx"
+Edit-File $r "import { branchTable, groupBranches, headline } from './core/table'" "import { bandStatus, branchTable, groupBranches, headline } from './core/table'"
+Edit-File $r @'
+// The pane opens by itself once per load, or a sentence when there are no branches. */
 export const branchTable = (branches: Branch[]): string => {
   if (branches.length === 0) return '_No branches yet._'
   const rows = branches.map(
