@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Branchline for Claude Code</title>
+<meta name="description" content="A Claude Code plugin that shows your repository's live Git history in a pane beside the chat: branches, tags, HEAD and how each branch stands against main.">
+<link rel="icon" href="favicon.png" type="image/png">
+<link rel="canonical" href="https://git-branchline.codeby.se/">
+<meta property="og:title" content="Branchline for Claude Code">
+<meta property="og:description" content="Your repository's live Git history beside the chat.">
+<meta property="og:image" content="https://git-branchline.codeby.se/preview.png">
+<meta property="og:url" content="https://git-branchline.codeby.se/">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+:root{--bg:#1a1918;--panel:#262624;--line:#3a3936;--fg:#ece9e0;--dim:#a3a19a;--teal:#1D9E75;--coral:#D85A30;--purple:#7F77DD;--amber:#EF9F27;
+  --mono:ui-monospace,'Cascadia Code',Consolas,'SF Mono',monospace;--sans:system-ui,-apple-system,'Segoe UI',sans-serif}
+*{box-sizing:border-box}
+html{color-scheme:dark}
+body{margin:0;background:var(--bg);color:var(--fg);font:17px/1.6 var(--sans);-webkit-font-smoothing:antialiased}
+a{color:inherit}
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+nav{display:flex;align-items:center;justify-content:space-between;padding:20px 0}
+nav .brand{display:flex;align-items:center;gap:10px;font-weight:600;text-decoration:none}
+nav .brand img{width:28px;height:28px}
+nav .links{display:flex;gap:22px;font-size:15px}
+nav .links a{color:var(--dim);text-decoration:none}
+nav .links a:hover{color:var(--fg)}
+.hero{display:grid;grid-template-columns:1fr;gap:40px;padding:56px 0 24px;text-align:center}
+.hero img.logo{width:104px;height:104px;margin:0 auto}
+h1{font-size:clamp(36px,6vw,58px);line-height:1.08;margin:0;letter-spacing:-.02em}
+h1 span{background:linear-gradient(90deg,var(--teal),var(--purple) 55%,var(--coral));-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{max-width:640px;margin:18px auto 0;color:var(--dim);font-size:19px}
+.install{display:flex;align-items:center;gap:8px;max-width:680px;margin:28px auto 0;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px 6px 6px 18px;font:15px var(--mono);text-align:left}
+.install code{flex:1;overflow-x:auto;white-space:nowrap;padding:8px 0}
+.install code::before{content:'> ';color:var(--dim)}
+button.copy{flex:none;font:600 14px var(--sans);color:var(--bg);background:var(--fg);border:0;border-radius:8px;padding:9px 14px;cursor:pointer}
+button.copy:hover{background:#fff}
+.cta{display:flex;gap:12px;justify-content:center;margin-top:18px;font-size:15px}
+.cta a{padding:8px 16px;border:1px solid var(--line);border-radius:999px;text-decoration:none;color:var(--dim)}
+.cta a:hover{color:var(--fg);border-color:var(--dim)}
+.window{margin:40px auto 0;max-width:920px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--panel);box-shadow:0 30px 80px #0008}
+.window .bar{display:flex;gap:7px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.window .bar i{width:11px;height:11px;border-radius:50%;background:#4a4945}
+.window img{display:block;width:100%;height:auto}
+.caption{color:var(--dim);font-size:14px;text-align:center;margin-top:12px}
+section{padding:72px 0 0}
+h2{font-size:30px;margin:0 0 8px;letter-spacing:-.01em}
+.sub{color:var(--dim);margin:0 0 28px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px}
+.card h3{margin:0 0 6px;font-size:18px;display:flex;align-items:center;gap:10px}
+.card h3::before{content:'';width:10px;height:10px;border-radius:50%;background:var(--c,var(--teal));flex:none}
+.card p{margin:0;color:var(--dim);font-size:15.5px}
+code{font-family:var(--mono);font-size:.92em}
+p code,li code{background:#ffffff12;padding:1px 6px;border-radius:5px}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.steps .card ol{margin:10px 0 0;padding-left:20px;color:var(--dim);font-size:15.5px}
+pre{margin:12px 0 0;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px 14px;white-space:pre-wrap;overflow-wrap:anywhere;font:14px/1.5 var(--mono)}
+.safe{display:flex;gap:18px;align-items:flex-start;background:linear-gradient(135deg,#1D9E7522,#7F77DD14);border:1px solid #1D9E7555;border-radius:14px;padding:24px}
+.safe .mark{flex:none;width:40px;height:40px;border-radius:50%;border:3px solid var(--amber);display:grid;place-items:center}
+.safe .mark::after{content:'';width:16px;height:16px;border-radius:50%;background:var(--teal)}
+.safe p{margin:0;color:var(--dim)}
+.safe strong{color:var(--fg)}
+footer{margin:88px 0 0;padding:28px 0 40px;border-top:1px solid var(--line);color:var(--dim);font-size:14px;display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between}
+footer a{color:var(--dim)}
+@media (max-width:640px){nav .links a.hide{display:none}.safe{flex-direction:column}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <a class="brand" href="#"><img src="icon.png" alt="">Branchline</a>
+    <div class="links">
+      <a class="hide" href="#features">Features</a>
+      <a class="hide" href="#install">Install</a>
+      <a href="https://github.com/dvalfrid/git-branchline">GitHub</a>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div>
+      <img class="logo" src="icon.png" alt="Branchline icon">
+      <h1>Your Git history,<br><span>live beside the chat</span></h1>
+      <p class="lede">Branchline is a Claude Code plugin that draws your repository's branches, tags and <code>HEAD</code> in a pane next to the conversation, and shows how every branch stands against <code>main</code>. It updates by itself as you and Claude commit, merge and switch.</p>
+      <div class="install">
+        <code id="cmd">/plugin install git-branchline --marketplace dvalfrid/git-branchline</code>
+        <button class="copy" data-copy="cmd">Copy</button>
+      </div>
+      <div class="cta">
+        <a href="#install">Other ways to install</a>
+        <a href="https://github.com/dvalfrid/git-branchline">Source on GitHub</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="window">
+    <div class="bar"><i></i><i></i><i></i></div>
+    <img src="branchline.gif" width="888" height="624" alt="The Branchline graph updating as commits, a merge and new branches land">
+  </div>
+  <p class="caption">The graph as Branchline draws it, following a repository through commits, a merge and new branches.</p>
+
+  <section id="features">
+    <h2>What you get</h2>
+    <p class="sub">Made for the Claude desktop app, with a text fallback for the terminal.</p>
+    <div class="grid">
+      <div class="card" style="--c:var(--teal)"><h3>Graph tab</h3><p>The commit graph colored by branch, with ref pills, <code>HEAD</code> ringed and tooltips on hover. Quiet stretches fold into one row when the graph does not fit.</p></div>
+      <div class="card" style="--c:var(--coral)"><h3>Branches tab</h3><p>Branches grouped as Active, Local and remote, Remote only and Old local, with age, ahead/behind bars and status.</p></div>
+      <div class="card" style="--c:var(--purple)"><h3>Open a branch</h3><p>See its commits and most changed files, ask Claude about it, copy its name, or clean it up.</p></div>
+      <div class="card" style="--c:#378ADD"><h3>Always current</h3><p>Reads again after every <code>git</code> command Claude runs, and notices changes from a terminal or another Git client within seconds.</p></div>
+      <div class="card" style="--c:#D4537E"><h3>One click away</h3><p>A row above the prompt shows the checked-out branch and opens the pane. <code>/branchline</code> does the same.</p></div>
+      <div class="card" style="--c:#9c9a92"><h3>Terminal too</h3><p>In a terminal session the graph is drawn as text in the style of <code>git log --graph</code>.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="safe">
+      <div class="mark" aria-hidden="true"></div>
+      <div>
+        <h2 style="font-size:22px;margin-bottom:6px">It only reads</h2>
+        <p>Branchline never fetches, checks out or pushes. <strong>The one exception:</strong> it can delete a merged local branch with <code>git branch -d</code>, which refuses unmerged work, after you press twice. Anything else, such as force-deleting a branch or deleting one on a remote, is handed to Claude as a prompt for you to send.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="install">
+    <h2>Install</h2>
+    <p class="sub">Requires Git on <code>PATH</code>. Git 2.41 or later is fastest.</p>
+    <div class="steps">
+      <div class="card"><h3>Claude Code terminal</h3>
+        <pre>/plugin install git-branchline --marketplace dvalfrid/git-branchline</pre>
+        <ol><li>Answer <code>y</code> to add the marketplace.</li><li>Pick user scope to load it in every session.</li></ol>
+      </div>
+      <div class="card" style="--c:var(--coral)"><h3>Claude desktop app</h3>
+        <ol><li>Click <strong>+</strong> next to the prompt box, then <strong>Plugins</strong>.</li><li><strong>Add marketplace</strong>: <code>dvalfrid/git-branchline</code>.</li><li><strong>Add plugin</strong>: Branchline.</li></ol>
+      </div>
+      <div class="card" style="--c:var(--purple)"><h3>From a shell</h3>
+        <pre>claude plugin install git-branchline --marketplace dvalfrid/git-branchline</pre>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>Branchline for Claude Code · MIT license</span>
+    <span><a href="https://github.com/dvalfrid/git-branchline">GitHub</a> · <a href="https://github.com/dvalfrid/git-branchline/issues">Issues</a> · <a href="https://github.com/dvalfrid/git-branchline/blob/main/CHANGELOG.md">Changelog</a> · <a href="https://github.com/dvalfrid/git-branchline/blob/main/CONTRIBUTING.md">Contribute</a></span>
+  </footer>
+</div>
+<script>
+document.querySelectorAll('button.copy').forEach(b => b.addEventListener('click', async () => {
+  await navigator.clipboard.writeText(document.getElementById(b.dataset.copy).textContent)
+  b.textContent = 'Copied'; setTimeout(() => (b.textContent = 'Copy'), 1500)
+}))
+</script>
+</body>
+</html>

@@ -1,5 +1,7 @@
 # Branchline for Claude Code
 
+[git-branchline.codeby.se](https://git-branchline.codeby.se)
+
 `git-branchline` is a Claude Code mod that shows the Git history of the
 session's repository in a pane beside the chat: branches, tags, remotes,
 where `HEAD` is, and how each branch stands against the default branch. The
