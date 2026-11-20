@@ -172,11 +172,12 @@ export const register: Register = on => {
   })
 
   // Closed by the person (or dropped by a reload): the row above the prompt comes back.
+  // Never holds a close up: if the hook fails, the pane closes as it would have.
   on('ui.close', async ($, e, next) => {
     const closed = await next(e)
     if (e.id === PANE) await update($, paneUp, () => false)
     return closed
-  })
+  }).catch(($, e, next) => next(e))
 
   // While the pane is closed, a row above the prompt opens it, with the
   // checked-out branch beside the button. Nothing outside a Git repository.
