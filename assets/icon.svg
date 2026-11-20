@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <rect width="1024" height="1024" rx="224" fill="#1E272D"/>
+  <g fill="none" stroke-width="48" stroke-linecap="round">
+    <!-- base line, history continuing above and below -->
+    <path d="M300 150 V900" stroke="#B4B2A9"/>
+    <!-- teal branch: leaves the base, merges back -->
+    <path d="M300 820 C300 740 512 760 512 680 V440 C512 340 300 360 300 280" stroke="#1D9E75"/>
+    <!-- coral branch: leaves teal, still open (HEAD) -->
+    <path d="M512 680 C512 600 724 620 724 540 V300" stroke="#D85A30"/>
+  </g>
+  <g stroke="#1E272D" stroke-width="22">
+    <circle cx="300" cy="820" r="62" fill="#B4B2A9"/>
+    <circle cx="300" cy="550" r="62" fill="#B4B2A9"/>
+    <circle cx="300" cy="280" r="62" fill="#B4B2A9"/>
+    <circle cx="512" cy="680" r="62" fill="#1D9E75"/>
+    <circle cx="512" cy="440" r="62" fill="#1D9E75"/>
+    <circle cx="724" cy="540" r="62" fill="#D85A30"/>
+    <circle cx="724" cy="300" r="62" fill="#D85A30"/>
+  </g>
+  <!-- HEAD -->
+  <circle cx="724" cy="300" r="100" fill="none" stroke="#F2EFE6" stroke-width="20"/>
+</svg>

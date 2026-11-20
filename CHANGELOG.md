@@ -5,6 +5,8 @@ All notable changes are listed here. Versions follow
 
 ## Unreleased
 
+- An icon for the plugin directory (`.claude-plugin/icon.png`, drawn from`n  `assets/icon.svg`).
+
 ## 0.1.0
 
 First public version.
