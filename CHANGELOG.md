@@ -6,6 +6,7 @@ All notable changes are listed here. Versions follow
 ## Unreleased
 
 - An icon for the plugin directory (`.claude-plugin/icon.png`, drawn from`n  `assets/icon.svg`).
+- An animated picture of the graph in the README (`docs/branchline.gif`).
 
 ## 0.1.0
 

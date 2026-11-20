@@ -7,6 +7,8 @@ pane updates by itself when the history changes: a commit, fetch, pull,
 checkout or merge, whether Claude ran it or you did in a terminal or another
 Git client.
 
+![The Branchline graph updating as commits, a merge and new branches land](docs/branchline.gif)
+
 ## Features
 
 - **Graph tab**: the commit graph, colored by branch, with ref pills, `HEAD`
