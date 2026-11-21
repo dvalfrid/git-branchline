@@ -1,4 +1,4 @@
-# Branchline for Claude Code
+# Branchline
 
 [![Checks](https://github.com/dvalfrid/git-branchline/actions/workflows/checks.yml/badge.svg)](https://github.com/dvalfrid/git-branchline/actions/workflows/checks.yml)
 
@@ -75,10 +75,10 @@ In the Claude desktop app, where `/plugin` does not run:
 
    <img src="docs/install-2-repository.png" width="430" alt="The Add marketplace dialog with a URL field for a GitHub owner/repo or a Git URL">
 
-3. The **Directory** opens on the marketplace. Pick **Branchline for Claude
-   Code** (or press its **+**).
+3. The **Directory** opens on the marketplace. Pick **Branchline** (or press its
+   **+**).
 
-   <img src="docs/install-3-directory.png" width="700" alt="The plugin Directory showing the git-branchline marketplace and its Branchline for Claude Code plugin">
+   <img src="docs/install-3-directory.png" width="700" alt="The plugin Directory showing the git-branchline marketplace and its Branchline plugin">
 
 4. Choose **Install** → **Install for me** to have it in every project on
    this machine, or a project scope to share it through `.claude/` or keep

@@ -5,9 +5,9 @@ Starting context for coding sessions in this project. Read this file and
 
 ## What it is
 
-**git-branchline** (display name "Branchline for Claude Code") is a Claude
-Code mod (a plugin) that shows the Git history of the session's repository in
-a pane beside the chat: branches, tags, remotes, where `HEAD` is and how the
+**git-branchline** (display name "Branchline") is a Claude Code mod (a
+plugin) that shows the Git history of the session's repository in a pane
+beside the chat: branches, tags, remotes, where `HEAD` is and how the
 branches stand against `main` (ahead/behind). The pane updates by itself when
 the history changes: commit, fetch, pull, checkout, merge.
 

@@ -9,6 +9,9 @@ All notable changes are listed here. Versions follow
   in a prompt exactly, instead of with `'` in their place or broken apart.
 - `git diff` runs with `--no-ext-diff --no-textconv`, so a repository's own
   diff programs never run.
+- The plugin is now called **Branchline** in the desktop app's Directory and
+  in the plugin list, without "for Claude Code".
+
 ## 0.3.0 (2026-11-21)
 
 - The desktop app's plugin Directory shows the plugin as **Branchline for

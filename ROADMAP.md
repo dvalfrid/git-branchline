@@ -375,3 +375,10 @@ Anything new starts as an issue.
   with tens of thousands of refs passes `$.process.run`'s 4 MiB output limit,
   so its branch list is cut; and the prompt box carries branch names, which
   the person reads before sending.
+- 2026-11-21: the display name is "Branchline", no longer "Branchline for
+  Claude Code". Anthropic's trademark guidelines want its names used only as
+  approved, and the plugin directory holds a name that matches a known brand
+  for a reviewer; of 317 plugins in the official marketplace, only Anthropic's
+  own and two large partners carry "Claude" in their names. In the Directory
+  the words say nothing new. The description, the README and the website
+  still say it is for Claude Code. `git-branchline` stays the plugin's name.

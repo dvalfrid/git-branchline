@@ -1,13 +1,13 @@
 {
   "name": "git-branchline",
-  "description": "Branchline for Claude Code: a live Git history pane beside the chat",
+  "description": "Branchline: a live Git history pane beside the chat, for Claude Code",
   "owner": {
     "name": "Daniel Valfridsson"
   },
   "plugins": [
     {
       "name": "git-branchline",
-      "displayName": "Branchline for Claude Code",
+      "displayName": "Branchline",
       "description": "A live Git history pane beside the chat: branches, tags, HEAD, and how each branch stands against main",
       "source": {
         "source": "github",
