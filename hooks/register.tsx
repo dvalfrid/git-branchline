@@ -260,14 +260,20 @@ export const register: Register = (on, given) => {
     if (runsGit(e.command)) void watch($).check()
     return ran
   }).catch(($, e, next) => next(e))
-  on('tool.call', { tool: 'PowerShell' }, async ($, e, next) => {
+  // PowerShell is a tool only where Claude Code registers it (Windows), so its
+  // name is matched by pattern and its command read without assuming its type.
+  on('tool.call', { tool: /^PowerShell$/ }, async ($, e, next) => {
     const ran = await next(e)
-    if (runsGit(e.command)) void watch($).check()
+    const command = 'command' in e && typeof e.command === 'string' ? e.command : ''
+    if (runsGit(command)) void watch($).check()
     return ran
   }).catch(($, e, next) => next(e))
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
-    const { Box, Text, Markdown, Svg, Button } = $.ui.resolve(e)
+    const elements = $.ui.resolve(e)
+    const { Box, Text, Markdown, Button } = elements
+    // The terminal has no Svg: it draws a text graph and tables instead.
+    const Svg = 'Svg' in elements ? elements.Svg : undefined
     const shot = await read($, snapshot)
     const chosen = await read($, prefs)
     const mode = foldModeOf(chosen.fold)
@@ -422,7 +428,7 @@ export const register: Register = (on, given) => {
       const deleteButtons = (branch: Branch) => {
         if (branch.isHead || branch.status === 'base') return null
         return (
-          <>
+          <Box flexDirection="row" flexWrap="wrap" columnGap={1} rowGap={1}>
             {canDeleteHere(branch) && (
               <Button key={`delete-${branch.name}`} onPress={() => void update($, pendingDelete, () => ({ names: [branch.name], isBulk: false }))}>
                 Delete branch
@@ -438,7 +444,7 @@ export const register: Register = (on, given) => {
                 Delete on origin via Claude…
               </Button>
             )}
-          </>
+          </Box>
         )
       }
 

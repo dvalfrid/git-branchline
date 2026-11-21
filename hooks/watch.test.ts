@@ -1,5 +1,8 @@
 import { expect, test } from 'claude-code/testing'
 
+// The test kit runs without the DOM or Node's globals.
+declare const setTimeout: (callback: (value?: unknown) => void, ms: number) => unknown
+
 import { createWatcher, runsGit } from './watch'
 
 test('reloads only when the signature changes, unless forced', async () => {

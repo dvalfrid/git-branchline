@@ -1,0 +1,49 @@
+# Checks every push to main and every pull request, on Linux and Windows:
+# the manifest and hooks, the tests, the code rules (scripts/check.mjs) and
+# the types.
+name: Checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  plugin:
+    name: Plugin checks (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+      - name: Validate the plugin
+        run: claude plugin validate .
+      - name: Run the tests
+        run: claude plugin test .
+      - name: Check the code rules
+        shell: bash
+        run: node scripts/check.mjs ${{ github.base_ref && format('--base origin/{0}', github.base_ref) || '' }}
+      # Claude Code writes the API's types into .claude-plugin/types/ when it
+      # loads a watched plugin folder. The session stops at "Not logged in",
+      # after the types are written.
+      - name: Write the Claude Code API types
+        shell: bash
+        run: |
+          CLAUDE_CODE_PLUGIN_DIR_WATCH=1 claude -p ok --plugin-dir . || true
+          test -f .claude-plugin/types/claude-code/index.d.ts
+      - name: Type-check
+        run: npx --yes -p typescript@5 tsc -p .

@@ -24,8 +24,14 @@ claude --plugin-dir .
 ```
 
 Claude Code writes the API types to `.claude-plugin/types/` when it loads the
-mod (the folder is ignored by Git). After that, `tsc -p .` type-checks the
-code if you have TypeScript installed.
+mod from a watched folder (the folder is ignored by Git). Without a session
+open, this writes them and stops at "Not logged in":
+
+```
+CLAUDE_CODE_PLUGIN_DIR_WATCH=1 claude -p ok --plugin-dir .
+```
+
+Then `npx -p typescript@5 tsc -p .` type-checks the code, tests included.
 
 ## Making a change
 
@@ -37,13 +43,14 @@ code if you have TypeScript installed.
    claude plugin validate .
    claude plugin test .
    node scripts/check.mjs
+   npx -p typescript@5 tsc -p .
    ```
    `scripts/check.mjs` holds the code to the rules below: every git call
    it finds must be a read (`rev-parse`, `for-each-ref`, `symbolic-ref`,
    `log`, `rev-list`, `diff`) or `branch -d`, with a literal subcommand; no
    shell as the program; `$.process.run` only through `repo.ts`; imports
    only from `claude-code` or relative paths; no leftover script lines; and
-   no gating hook without `.catch`. CI runs it on every push and pull
+   no gating hook without `.catch`. The Checks workflow runs it on every push and pull
    request. A new git read goes on its list in the same change.
 3. Try it in a real session, on the surfaces you changed (desktop app,
    terminal), and say in the pull request which ones you tried.
@@ -67,7 +74,9 @@ lines in `CHANGELOG.md` under that version.
 ## Pull requests
 
 - One topic per pull request, with a short description of what and why.
-- CI runs validation and the tests on every pull request.
+- The Checks workflow (`.github/workflows/checks.yml`) validates the plugin,
+  runs the tests, checks the code rules and type-checks, on Linux and
+  Windows, for every pull request.
 - By contributing you agree that your work is released under the
   [MIT License](LICENSE).
 

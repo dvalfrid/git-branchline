@@ -55,8 +55,9 @@ git-branchline/
 - **Timer:** `$.clock.every(…)` (stopped on reload).
 - Checks: `claude plugin validate .`, `claude plugin test .`,
   `node scripts/check.mjs` (the read-only rule, argv lists, imports and
-  `.catch`; run in CI), and `tsc -p .` once the engine has written
-  `.claude-plugin/types/`.
+  `.catch`), and `npx -p typescript@5 tsc -p .` once the engine has written
+  `.claude-plugin/types/` (see CONTRIBUTING.md). The Checks workflow runs
+  all four on Linux and Windows.
 
 ### Loading the mod during development
 

@@ -107,6 +107,7 @@ Checks:
 claude plugin validate .
 claude plugin test .
 node scripts/check.mjs
+npx -p typescript@5 tsc -p .
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for how the code is laid out and how

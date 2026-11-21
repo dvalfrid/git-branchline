@@ -1,4 +1,5 @@
-import { expect, test } from 'claude-code/testing'
+import { expect, test, type Engine } from 'claude-code/testing'
+import type { CommandRunInput, On, ProcessRunResult, RenderSurface } from 'claude-code'
 
 import { FS, RS } from './core/git'
 
@@ -18,6 +19,26 @@ const PANE = {
 
 const row = (...fields: string[]) => fields.join(FS)
 
+// The test kit runs without the DOM or Node's globals.
+declare const setTimeout: (callback: (value?: unknown) => void, ms: number) => unknown
+
+/** `/branchline` as typed at the prompt. */
+const BRANCHLINE: CommandRunInput = {
+  command: 'branchline',
+  args: '',
+  origin: { kind: 'composer' },
+  presentation: { isFullscreen: true, columns: 120 },
+}
+
+/** What `$.process.run` hands back for a git call. */
+const ran = (exitCode: number, stdout: string, stderr = ''): ProcessRunResult => ({
+  exitCode,
+  stdout,
+  stderr,
+  isStdoutTruncated: false,
+  isStderrTruncated: false,
+})
+
 /** YYYY-MM-DD this many days before today: 'active' depends on how recent a branch is. */
 const daysAgo = (days: number): string => {
   const date = new Date(Date.now() - days * 86_400_000)
@@ -29,8 +50,8 @@ const FEATURE_DATE = daysAgo(2)
 const CMS_DATE = daysAgo(9)
 
 /** A small repo: main (HEAD), an open feature, a stale branch, a merged remote-only branch, a tag. */
-const fakeGit = (argv: readonly string[]): { exitCode: number; stdout: string; stderr: string } => {
-  const ok = (stdout: string) => ({ exitCode: 0, stdout, stderr: '' })
+const fakeGit = (argv: readonly string[]): ProcessRunResult => {
+  const ok = (stdout: string) => ran(0, stdout)
   const args = argv.join(' ')
   if (args === 'git rev-parse --show-toplevel') return ok('D:/Development/demo\n')
   if (args.includes('symbolic-ref')) return ok('origin/main\n')
@@ -69,7 +90,7 @@ const fakeGit = (argv: readonly string[]): { exitCode: number; stdout: string; s
         '\n',
     )
   }
-  return { exitCode: 1, stdout: '', stderr: `unexpected: ${args}` }
+  return ran(1, '', `unexpected: ${args}`)
 }
 
 test('the pane shows the branches in groups, on every surface', async ($, on) => {
@@ -77,7 +98,7 @@ test('the pane shows the branches in groups, on every surface', async ($, on) =>
   on('ui.open', () => ({ value: { isPlaced: true } }))
   on('process.run', (_, e) => ({ value: fakeGit(e.argv) }))
 
-  const { text } = await $.command.run({ command: 'branchline' })
+  const { text } = await $.command.run(BRANCHLINE)
   expect(text).toBe('Branchline updated.')
 
   for (const surface of ['terminal', 'desktop', 'vscode', 'mobile'] as const) {
@@ -122,7 +143,7 @@ test('a group header folds its branches away and back', async ($, on) => {
   on('command.register', () => ({ value: { command: 'branchline' } }))
   on('ui.open', () => ({ value: { isPlaced: true } }))
   on('process.run', (_, e) => ({ value: fakeGit(e.argv) }))
-  await $.command.run({ command: 'branchline' })
+  await $.command.run(BRANCHLINE)
   const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
   await ui.press({ key: 'tab-branches' })
   const lists = async () => (await ui.findAll({ type: 'Svg' })).map(list => (list.props as { alt: string }).alt)
@@ -139,9 +160,9 @@ test('a group header folds its branches away and back', async ($, on) => {
 test('a folder outside git says so', async ($, on) => {
   on('command.register', () => ({ value: { command: 'branchline' } }))
   on('ui.open', () => ({ value: { isPlaced: true } }))
-  on('process.run', () => ({ value: { exitCode: 128, stdout: '', stderr: 'fatal: not a git repository' } }))
+  on('process.run', () => ({ value: ran(128, '', 'fatal: not a git repository') }))
 
-  await $.command.run({ command: 'branchline' })
+  await $.command.run(BRANCHLINE)
   const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
   expect((await ui.find({ type: 'Text' }))?.text).toBe("This session's folder is not a Git repository.")
   await ui.unmount()
@@ -163,16 +184,16 @@ test('quiet stretches fold when they do not fit, and the button shows every comm
   on('ui.open', () => ({ value: { isPlaced: true } }))
   on('process.run', (_, e) => {
     const args = e.argv.join(' ')
-    if (args.includes(' log ')) return { value: { exitCode: 0, stdout: log, stderr: '' } }
-    if (args.includes('ahead-behind')) return { value: { exitCode: 0, stdout: row('refs/heads/main', '0 0'), stderr: '' } }
+    if (args.includes(' log ')) return { value: ran(0, log) }
+    if (args.includes('ahead-behind')) return { value: ran(0, row('refs/heads/main', '0 0')) }
     if (args.includes('for-each-ref')) {
-      return { value: { exitCode: 0, stdout: row('refs/heads/main', 'c0', '', '2026-11-01', '*'), stderr: '' } }
+      return { value: ran(0, row('refs/heads/main', 'c0', '', '2026-11-01', '*')) }
     }
-    if (args.includes('symbolic-ref')) return { value: { exitCode: 1, stdout: '', stderr: '' } }
+    if (args.includes('symbolic-ref')) return { value: ran(1, '') }
     return { value: fakeGit(e.argv) }
   })
 
-  await $.command.run({ command: 'branchline' })
+  await $.command.run(BRANCHLINE)
 
   // A tall pane has room for all nine: nothing folds.
   const tall = await $.ui.mount({ ...PANE, surface: 'desktop' })
@@ -196,19 +217,19 @@ test("Claude's git commands make the pane read the repo again", async ($, on) =>
     const args = e.argv.join(' ')
     // The signature and the refs follow `tip`, so a new commit changes both.
     if (args.includes('%(refname) %(objectname)')) {
-      return { value: { exitCode: 0, stdout: `refs/heads/main ${tip} *\n`, stderr: '' } }
+      return { value: ran(0, `refs/heads/main ${tip} *\n`) }
     }
-    if (args.includes('rev-parse --verify')) return { value: { exitCode: 0, stdout: `${tip}\n`, stderr: '' } }
+    if (args.includes('rev-parse --verify')) return { value: ran(0, `${tip}\n`) }
     if (args.includes('for-each-ref') && !args.includes('ahead-behind')) {
-      return { value: { exitCode: 0, stdout: row('refs/heads/main', tip, '', '2026-11-19', '*') + '\n', stderr: '' } }
+      return { value: ran(0, row('refs/heads/main', tip, '', '2026-11-19', '*') + '\n') }
     }
     if (args.includes(' log ')) {
-      return { value: { exitCode: 0, stdout: row(tip, '', '2026-11-19', 'Daniel', 'HEAD -> main', `commit ${tip}`) + RS, stderr: '' } }
+      return { value: ran(0, row(tip, '', '2026-11-19', 'Daniel', 'HEAD -> main', `commit ${tip}`) + RS) }
     }
     return { value: fakeGit(e.argv) }
   })
 
-  await $.command.run({ command: 'branchline' })
+  await $.command.run(BRANCHLINE)
   const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
   const source = async () => ((await ui.find({ type: 'Svg' }))?.props as { source: string }).source
   expect(await source()).toContain('commit a1')
@@ -236,12 +257,12 @@ test('opening a branch shows its commits and files, and Ask fills the prompt', a
   on('process.run', (_, e) => {
     const args = e.argv.join(' ')
     if (args.includes('origin/main..feature/x')) {
-      return { value: { exitCode: 0, stdout: [row('b2', FEATURE_DATE, 'Daniel', 'Add <menu>'), row('b1', FEATURE_DATE, 'Daniel', 'Start menu')].join('\n') + '\n', stderr: '' } }
+      return { value: ran(0, [row('b2', FEATURE_DATE, 'Daniel', 'Add <menu>'), row('b1', FEATURE_DATE, 'Daniel', 'Start menu')].join('\n') + '\n') }
     }
-    if (args.includes('--numstat')) return { value: { exitCode: 0, stdout: '10\t2\tsrc/menu.ts\n1\t0\tREADME.md\n', stderr: '' } }
+    if (args.includes('--numstat')) return { value: ran(0, '10\t2\tsrc/menu.ts\n1\t0\tREADME.md\n') }
     return { value: fakeGit(e.argv) }
   })
-  await $.command.run({ command: 'branchline' })
+  await $.command.run(BRANCHLINE)
   const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
   await ui.press({ key: 'tab-branches' })
 
@@ -273,7 +294,7 @@ test('the terminal gets a text graph with git-style decorations', async ($, on) 
   on('command.register', () => ({ value: { command: 'branchline' } }))
   on('ui.open', () => ({ value: { isPlaced: true } }))
   on('process.run', (_, e) => ({ value: fakeGit(e.argv) }))
-  await $.command.run({ command: 'branchline' })
+  await $.command.run(BRANCHLINE)
   const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
 
   expect(await ui.find({ type: 'Svg' })).toBeUndefined()
@@ -286,12 +307,12 @@ test('the terminal gets a text graph with git-style decorations', async ($, on) 
 /** The demo repo plus two merged local branches; `git branch -d` refuses `done2`. */
 const withMerged = (deleted: string[]) => (argv: readonly string[]) => {
   const args = argv.join(' ')
-  const ok = (stdout: string) => ({ exitCode: 0, stdout, stderr: '' })
+  const ok = (stdout: string) => ran(0, stdout)
   if (args.includes('branch -d -- ')) {
     const name = argv[argv.length - 1]!
     deleted.push(name)
     return name === 'done2'
-      ? { exitCode: 1, stdout: '', stderr: "error: the branch 'done2' is not fully merged" }
+      ? ran(1, '', "error: the branch 'done2' is not fully merged")
       : ok(`Deleted branch ${name} (was c1).\n`)
   }
   if (args.includes('ahead-behind')) {
@@ -305,7 +326,7 @@ const withMerged = (deleted: string[]) => (argv: readonly string[]) => {
   return fakeGit(argv)
 }
 
-const branchesPane = async ($: Parameters<Parameters<typeof test>[1]>[0], on: Parameters<Parameters<typeof test>[1]>[1], deleted: string[], filled: string[] = []) => {
+const branchesPane = async ($: Engine, on: On, deleted: string[], filled: string[] = []) => {
   on('command.register', () => ({ value: { command: 'branchline' } }))
   on('ui.open', () => ({ value: { isPlaced: true } }))
   on('prompt.fill', (_, e) => {
@@ -313,7 +334,7 @@ const branchesPane = async ($: Parameters<Parameters<typeof test>[1]>[0], on: Pa
     return { isFilled: true }
   })
   on('process.run', (_, e) => ({ value: withMerged(deleted)(e.argv) }))
-  await $.command.run({ command: 'branchline' })
+  await $.command.run(BRANCHLINE)
   const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
   await ui.press({ key: 'tab-branches' })
   await ui.press({ key: 'toggle-old' })
@@ -376,7 +397,7 @@ test('Old local deletes its merged branches together, and says what git refused'
 })
 
 test('with no surface yet, the pane opens when one attaches instead of failing', async ($, on) => {
-  let surfaces: string[] = []
+  let surfaces: RenderSurface[] = []
   const opened: string[] = []
   on('command.register', () => ({ value: { command: 'branchline' } }))
   on('session.surfaces', () => ({ value: surfaces }))
@@ -403,7 +424,7 @@ test('with no surface yet, the pane opens when one attaches instead of failing',
   expect(opened).toEqual(['branchline'])
 })
 
-const logsOf = (on: Parameters<Parameters<typeof test>[1]>[1], logs: string[]) => {
+const logsOf = (on: On, logs: string[]) => {
   on('command.register', () => ({ value: { command: 'branchline' } }))
   on('ui.open', () => ({ value: { isPlaced: true } }))
   on('process.run', (_, e) => {
@@ -415,7 +436,7 @@ const logsOf = (on: Parameters<Parameters<typeof test>[1]>[1], logs: string[]) =
 test('the graph reads branch history only by default', async ($, on) => {
   const logs: string[] = []
   logsOf(on, logs)
-  await $.command.run({ command: 'branchline' })
+  await $.command.run(BRANCHLINE)
   expect(logs.at(-1)).toContain(' log --branches --remotes HEAD ')
   expect(logs.at(-1)).not.toContain('--all')
 })
@@ -423,7 +444,7 @@ test('the graph reads branch history only by default', async ($, on) => {
 test('the Show tag-only commits setting reads every ref', { options: { showTagOnlyCommits: true } }, async ($, on) => {
   const logs: string[] = []
   logsOf(on, logs)
-  await $.command.run({ command: 'branchline' })
+  await $.command.run(BRANCHLINE)
   expect(logs.at(-1)).toContain(' log --all ')
 })
 
@@ -469,7 +490,7 @@ test('no row above the prompt outside a Git repository', async ($, on) => {
   on('session.surfaces', () => ({ value: [] }))
   on('ui.panes', () => ({ value: [] }))
   on('session.start', (_, e) => ({ cwd: e.cwd }))
-  on('process.run', () => ({ value: { exitCode: 128, stdout: '', stderr: 'fatal: not a git repository' } }))
+  on('process.run', () => ({ value: ran(128, '', 'fatal: not a git repository') }))
   on('ui.render', { component: 'AbovePrompt' }, ($, e) => { const { Box } = $.ui.resolve(e); return <Box /> })
   await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
   await settle()
@@ -478,7 +499,7 @@ test('no row above the prompt outside a Git repository', async ($, on) => {
   await band.unmount()
 })
 
-const nineCommits = (on: Parameters<Parameters<typeof test>[1]>[1]) => {
+const nineCommits = (on: On) => {
   const log =
     Array.from({ length: 9 }, (_, i) =>
       row(`c${i}`, i < 8 ? `c${i + 1}` : '', '2026-11-01', 'Lars', i === 0 ? 'HEAD -> main' : '', `edit ${i}`),
@@ -487,19 +508,19 @@ const nineCommits = (on: Parameters<Parameters<typeof test>[1]>[1]) => {
   on('ui.open', () => ({ value: { isPlaced: true } }))
   on('process.run', (_, e) => {
     const args = e.argv.join(' ')
-    if (args.includes(' log ')) return { value: { exitCode: 0, stdout: log, stderr: '' } }
-    if (args.includes('ahead-behind')) return { value: { exitCode: 0, stdout: row('refs/heads/main', '0 0'), stderr: '' } }
+    if (args.includes(' log ')) return { value: ran(0, log) }
+    if (args.includes('ahead-behind')) return { value: ran(0, row('refs/heads/main', '0 0')) }
     if (args.includes('for-each-ref')) {
-      return { value: { exitCode: 0, stdout: row('refs/heads/main', 'c0', '', '2026-11-01', '*'), stderr: '' } }
+      return { value: ran(0, row('refs/heads/main', 'c0', '', '2026-11-01', '*')) }
     }
-    if (args.includes('symbolic-ref')) return { value: { exitCode: 1, stdout: '', stderr: '' } }
+    if (args.includes('symbolic-ref')) return { value: ran(1, '') }
     return { value: fakeGit(e.argv) }
   })
 }
 
 test('with folding set to never, a short pane draws every commit; the settings sit beside the tabs', { options: { foldQuietStretches: 'never' } }, async ($, on) => {
   nineCommits(on)
-  await $.command.run({ command: 'branchline' })
+  await $.command.run(BRANCHLINE)
   const ui = await $.ui.mount({ ...PANE, surface: 'desktop', props: { ...PANE.props, scroll: { offset: 0, bodyRows: 10 } } })
   expect(((await ui.find({ type: 'Svg' }))?.props as { alt: string }).alt).toBe('Commit graph: 9 commits on 1 lane.')
   expect((await ui.findAll({ type: 'Button' })).map(button => button.text)).toEqual(['Graph', 'Branches (1)', '☐ Fold quiet stretches', '☐ Show tag-only commits'])
@@ -508,13 +529,13 @@ test('with folding set to never, a short pane draws every commit; the settings s
 
 test('with folding set to always, a tall pane folds too', { options: { foldQuietStretches: 'always' } }, async ($, on) => {
   nineCommits(on)
-  await $.command.run({ command: 'branchline' })
+  await $.command.run(BRANCHLINE)
   const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
   expect(((await ui.find({ type: 'Svg' }))?.props as { alt: string }).alt).toBe('Commit graph: 3 rows (9 commits, quiet stretches folded) on 1 lane.')
   await ui.unmount()
 })
 
-const storeIn = (on: Parameters<Parameters<typeof test>[1]>[1], kept: Map<string, unknown>) => {
+const storeIn = (on: On, kept: Map<string, unknown>) => {
   on('store.get', (_, e) => ({ value: kept.get(e.key) }))
   on('store.set', (_, e) => {
     kept.set(e.key, e.value)
@@ -526,7 +547,7 @@ test('the settings changed in the pane are kept for later sessions', async ($, o
   const kept = new Map<string, unknown>()
   nineCommits(on)
   storeIn(on, kept)
-  await $.command.run({ command: 'branchline' })
+  await $.command.run(BRANCHLINE)
   const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
   await ui.press({ key: 'fold' })
   await ui.press({ key: 'tag-only' })
@@ -540,7 +561,7 @@ test('the settings changed in the pane are kept for later sessions', async ($, o
 test('what the pane kept wins over the userConfig default', { options: { foldQuietStretches: 'never' } }, async ($, on) => {
   nineCommits(on)
   storeIn(on, new Map<string, unknown>([['prefs', { fold: 'always', tagOnly: false }]]))
-  await $.command.run({ command: 'branchline' })
+  await $.command.run(BRANCHLINE)
   const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
   expect(((await ui.find({ type: 'Svg' }))?.props as { alt: string }).alt).toBe('Commit graph: 3 rows (9 commits, quiet stretches folded) on 1 lane.')
   await ui.unmount()
@@ -552,18 +573,18 @@ test('a group of many branches shows the first 30 until asked for all', async ($
   on('ui.open', () => ({ value: { isPlaced: true } }))
   on('process.run', (_, e) => {
     const args = e.argv.join(' ')
-    if (args.includes(' log ')) return { value: { exitCode: 0, stdout: row('c0', '', '2026-01-01', 'Lars', 'HEAD -> main', 'start') + RS, stderr: '' } }
+    if (args.includes(' log ')) return { value: ran(0, row('c0', '', '2026-01-01', 'Lars', 'HEAD -> main', 'start') + RS) }
     if (args.includes('ahead-behind')) {
-      return { value: { exitCode: 0, stdout: [row('refs/heads/main', '0 0'), ...names.map(n => row(`refs/heads/${n}`, '0 1'))].join('\n'), stderr: '' } }
+      return { value: ran(0, [row('refs/heads/main', '0 0'), ...names.map(n => row(`refs/heads/${n}`, '0 1'))].join('\n')) }
     }
     if (args.includes('for-each-ref')) {
       const refs = [row('refs/heads/main', 'c0', '', '2026-01-01', '*'), ...names.map(n => row(`refs/heads/${n}`, 'c0', '', '2025-01-01', ''))]
-      return { value: { exitCode: 0, stdout: refs.join('\n'), stderr: '' } }
+      return { value: ran(0, refs.join('\n')) }
     }
-    if (args.includes('symbolic-ref')) return { value: { exitCode: 1, stdout: '', stderr: '' } }
+    if (args.includes('symbolic-ref')) return { value: ran(1, '') }
     return { value: fakeGit(e.argv) }
   })
-  await $.command.run({ command: 'branchline' })
+  await $.command.run(BRANCHLINE)
   const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
   await ui.press({ key: 'tab-branches' })
   await ui.press({ key: 'toggle-old' })

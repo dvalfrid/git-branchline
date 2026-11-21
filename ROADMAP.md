@@ -255,3 +255,15 @@ Steps 1–9 are done. Open questions are below; anything new starts as an issue.
   copy. CI runs it after the tests; on a pull request it also warns when
   `hooks/` changed and `CHANGELOG.md` did not. Type-checking with `tsc` is not
   in CI (it would need TypeScript from npm there).
+- 2026-11-21: type-checking joins the checks. The API's types are not in the
+  repository (Claude Code writes them per build); `claude -p --plugin-dir .`
+  with `CLAUDE_CODE_PLUGIN_DIR_WATCH=1` writes them even without a login, so
+  the workflow does that and runs `tsc` from `typescript@5` through npx (a
+  tool of the workflow, not a dependency of the mod). The first run found 42
+  errors, two in the mod (`Svg` destructured though the terminal has none; a
+  fragment holding `false`) and the rest in the tests' fakes, all fixed. The
+  workflow is now called Checks (`checks.yml`) and names each step for what
+  it does.
+  The types list only the tools the machine registers, and a session without
+  PowerShell (Linux, or a fresh one) has none, so the PowerShell hook matches
+  `/^PowerShell$/` and reads `command` only after checking it is there.
