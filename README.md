@@ -34,6 +34,18 @@ after two presses. Anything else that changes the repository, such as
 `git branch -D` or deleting a branch on a remote, is handed to Claude as a
 prompt for you to send, and runs with Claude's usual permission prompts.
 
+## Try it
+
+In any session whose folder is a Git repository:
+
+- Type `/branchline`. The pane opens on the Graph tab and shows the history.
+- Ask Claude to "make a branch called demo and commit a small change on it".
+  The new branch and its commit appear in the graph as the commit lands.
+- Open the **Branches** tab and press a branch: its commits and most changed
+  files show, with buttons to ask Claude about it or copy its name.
+- Ask Claude "which of my branches are merged into main?", then delete one
+  of them from the Branches tab with **Delete** and the confirmation.
+
 ## Install
 
 At the prompt of a Claude Code terminal session:
@@ -83,9 +95,12 @@ defaults (see Settings), so there is nothing to configure.
 
 Requires Git on `PATH`. Git 2.41 or later reads ahead/behind counts in one
 call; older versions fall back to one `rev-list` per branch, which takes
-seconds in a repository with hundreds of branches. Tried with Claude Code
-2.1.326 and Git 2.56; the mod API changes between Claude Code versions, so
-say in an issue if a newer one breaks it.
+seconds in a repository with hundreds of branches. Tried with Git 2.56.
+
+Needs Claude Code 2.1.326 or later, the version it is tried with in the
+desktop app and the terminal. An older version may lack parts of the mod API,
+and the pane then does not load. The mod API also changes between versions:
+if a newer Claude Code breaks Branchline, say so in an issue.
 
 ### Update and uninstall
 

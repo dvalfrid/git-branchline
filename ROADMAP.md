@@ -12,8 +12,10 @@ Steps 1–9 are done and 0.3.0 is released. Toward 1.0:
 - [ ] Try VS Code.
 - [x] Try the mobile app: through Remote Control the command works, the pane
       is not shown (below).
-- [ ] Say which Claude Code version is needed, and what to do when the mod
-      API changes (0.2.0 is tried with 2.1.326).
+- [x] Say which Claude Code version is needed, and what to do when the mod
+      API changes: the README says 2.1.326 or later, and to report a break in
+      an issue. An `engines["claude-code"]` range in plugin.json (honoured
+      from 2.1.323) is not set yet.
 - [ ] Decide the open questions below.
 - [ ] A real screenshot of the pane for the README, the website and the
       plugin directory.
