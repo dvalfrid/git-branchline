@@ -1,7 +1,7 @@
 {
   "name": "git-branchline",
   "displayName": "Branchline",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "A live Git history pane beside the chat: branches, tags, HEAD, and how each branch stands against main",
   "author": {
     "name": "Code By AB",

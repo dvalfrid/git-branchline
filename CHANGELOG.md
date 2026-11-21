@@ -5,6 +5,8 @@ All notable changes are listed here. Versions follow
 
 ## Unreleased
 
+## 0.3.2 (2026-11-21)
+
 - The plugin's icon, documentation and support links are set in
   `plugin.json`, where the plugin directory reads them.
 - The author and the marketplace's owner are Code By AB.
