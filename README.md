@@ -53,7 +53,8 @@ claude plugin install git-branchline --marketplace dvalfrid/git-branchline
 
 In the Claude desktop app, where `/plugin` does not run:
 
-1. Open **Settings** → **Plugins**, press **Add**, then **Add marketplace**
+1. Open **Plugins**: in the left sidebar, or under **Settings** → **Plugins**,
+   depending on the app's version. Press **Add**, then **Add marketplace**
    and **Add from a repository**.
 
    <img src="docs/install-1-add-marketplace.png" width="430" alt="The Add marketplace dialog: Browse Anthropic sources, or Add from a repository">
