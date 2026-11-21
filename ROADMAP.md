@@ -9,7 +9,9 @@ Steps 1–9 are done and 0.3.0 is released. Toward 1.0:
       hundreds of branches), tried against real ones.
 - [x] Checks in CI: validate, tests, code rules, types; releases from the
       Release workflow.
-- [ ] Try VS Code and the mobile app.
+- [ ] Try VS Code.
+- [x] Try the mobile app: through Remote Control the command works, the pane
+      is not shown (below).
 - [ ] Say which Claude Code version is needed, and what to do when the mod
       API changes (0.2.0 is tried with 2.1.326).
 - [ ] Decide the open questions below.
@@ -347,3 +349,11 @@ Anything new starts as an issue.
   takes effect with the next release; the entry also carries the
   description. Validate knows both fields. The Directory's card shows a
   generic icon, not `.claude-plugin/icon.png`.
+- 2026-11-21: the mobile app, tried on this repository's own session followed
+  through Remote Control (Claude Code 2.1.326 on the computer): the mod runs
+  on the computer, where the repository is, and the phone is only a surface.
+  `/branchline` typed on the phone reached the mod and answered "Branchline
+  updated.", but the app showed the pane nowhere (not in the session menu,
+  the usage ring or the + sheet); the Mods sheet the API mentions did not
+  appear. The mod's mobile drawing (the branch list) stays as it is until the
+  app shows panes; the README lists it as a known issue.

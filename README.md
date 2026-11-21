@@ -109,7 +109,11 @@ claude plugin marketplace remove git-branchline
   [anthropics/claude-code#111465](https://github.com/anthropics/claude-code/issues/111465).
 - In VS Code, a pane cannot be scrolled from code
   ([anthropics/claude-code#104733](https://github.com/anthropics/claude-code/issues/104733)).
-  Branchline has not been tried there yet, nor on mobile.
+  Branchline has not been tried there yet.
+- In the Claude mobile app, following a session on your computer through
+  Remote Control, `/branchline` works (it answers "Branchline updated.") but
+  the pane is not shown: the app has no place for a mod's pane there. Use the
+  desktop app or the terminal to see it.
 
 ## Settings
 
