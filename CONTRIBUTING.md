@@ -50,8 +50,8 @@ Then `npx -p typescript@5 tsc -p .` type-checks the code, tests included.
    `log`, `rev-list`, `diff`) or `branch -d`, with a literal subcommand; no
    shell as the program; `$.process.run` only through `repo.ts`; imports
    only from `claude-code` or relative paths; no leftover script lines; and
-   no gating hook without `.catch`. The Checks workflow runs it on every push and pull
-   request. A new git read goes on its list in the same change.
+   no gating hook without `.catch`. The Checks workflow runs it on every
+   push and pull request. A new git read goes on its list in the same change.
 3. Try it in a real session, on the surfaces you changed (desktop app,
    terminal), and say in the pull request which ones you tried.
 4. Record a decision or a ticked step in `ROADMAP.md` in the same commit, and
@@ -79,12 +79,13 @@ same script can run locally from a clean `main` that is even with `origin`
 (`node scripts/release.mjs 0.3.0 --dry-run`, then without `--dry-run`).
 
 The script runs the checks, sets the version in `plugin.json` and in the
-marketplace entry, points the entry at the tag `v0.2.0`, moves the
-Unreleased lines in `CHANGELOG.md` under `0.2.0`, commits "Release 0.2.0",
+marketplace entry, points the entry at the tag `vX.Y.Z`, moves the
+Unreleased lines in `CHANGELOG.md` under `X.Y.Z`, commits "Release X.Y.Z",
 checks that the two versions and the entry's tag agree, tags the commit
-`v0.2.0`, pushes the tag and then `main` (so the entry never points at
+`vX.Y.Z`, pushes the tag and then `main` (so the entry never points at
 a tag that is not there yet), and makes a GitHub release with the changelog
-lines. People get it with `/plugin update git-branchline` and a restart.
+lines. People get it with
+`claude plugin update git-branchline@git-branchline` and a restart.
 
 Versions follow [Semantic Versioning](https://semver.org/): a fix raises the
 last number, a feature the middle one.

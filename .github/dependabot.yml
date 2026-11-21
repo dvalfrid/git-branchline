@@ -1,0 +1,10 @@
+# Keeps the actions the workflows use (checkout, setup-node) current. The mod
+# itself has no dependencies to update.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: Workflows

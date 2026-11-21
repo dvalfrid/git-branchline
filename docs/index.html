@@ -110,6 +110,7 @@ footer a{color:var(--dim)}
       <div class="card" style="--c:#378ADD"><h3>Always current</h3><p>Reads again after every <code>git</code> command Claude runs, and notices changes from a terminal or another Git client within seconds.</p></div>
       <div class="card" style="--c:#D4537E"><h3>One click away</h3><p>A row above the prompt shows the checked-out branch and opens the pane. <code>/branchline</code> does the same.</p></div>
       <div class="card" style="--c:#9c9a92"><h3>Terminal too</h3><p>In a terminal session the graph is drawn as text in the style of <code>git log --graph</code>.</p></div>
+      <div class="card" style="--c:var(--amber)"><h3>Two settings</h3><p>Check boxes beside the tabs fold quiet stretches (by default only when the graph does not fit) and show commits only a tag keeps. They are kept between sessions.</p></div>
     </div>
   </section>
 
@@ -132,12 +133,13 @@ footer a{color:var(--dim)}
         <ol><li>Answer <code>y</code> to add the marketplace.</li><li>Pick user scope to load it in every session.</li></ol>
       </div>
       <div class="card" style="--c:var(--coral)"><h3>Claude desktop app</h3>
-        <ol><li>Click <strong>+</strong> next to the prompt box, then <strong>Plugins</strong>.</li><li><strong>Add marketplace</strong>: <code>dvalfrid/git-branchline</code>.</li><li><strong>Add plugin</strong>: Branchline.</li></ol>
+        <ol><li>Open <strong>Settings</strong>, then <strong>Plugins</strong>.</li><li>Press <strong>Add</strong> and add the marketplace <code>dvalfrid/git-branchline</code>.</li><li>Add Branchline from it.</li></ol>
       </div>
       <div class="card" style="--c:var(--purple)"><h3>From a shell</h3>
         <pre>claude plugin install git-branchline --marketplace dvalfrid/git-branchline</pre>
       </div>
     </div>
+    <p class="sub" style="margin-top:20px">A new release reaches you when you run <code>claude plugin update git-branchline@git-branchline</code> and restart Claude Code. Tried with Claude Code 2.1.326; see the <a href="https://github.com/dvalfrid/git-branchline#known-issues">known issues</a>.</p>
   </section>
 
   <footer>

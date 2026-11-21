@@ -2,7 +2,24 @@
 
 ## Now / next
 
-Steps 1–9 are done. Open questions are below; anything new starts as an issue.
+Steps 1–9 are done and 0.2.0 is released. Toward 1.0:
+
+- [x] Install from the marketplace, tried in a clean configuration.
+- [x] Unusual repositories (empty, detached, shallow, worktree, submodule,
+      hundreds of branches), tried against real ones.
+- [x] Checks in CI: validate, tests, code rules, types; releases from the
+      Release workflow.
+- [ ] Try VS Code and the mobile app.
+- [ ] Say which Claude Code version is needed, and what to do when the mod
+      API changes (0.2.0 is tried with 2.1.326).
+- [ ] Decide the open questions below.
+- [ ] A real screenshot of the pane for the README, the website and the
+      plugin directory.
+- [ ] Submit to the plugin directory.
+- [ ] The first release from the Release workflow (its dry run so far stopped,
+      rightly, at an empty Unreleased).
+
+Anything new starts as an issue.
 
 ## Steps
 
@@ -93,7 +110,7 @@ Steps 1–9 are done. Open questions are below; anything new starts as an issue.
   pane's size in cells: measured, 76 cells ≈ 640 px (8.4 px per cell) and a row
   ≈ 22 px. Folding happens only when the commits do not fit the pane
   (`foldMode` `auto`); the button picks `fold` or `expand` for the rest of the
-  session.
+  session. *Since 2026-11-21 folding is a setting kept between sessions (below).*
 - 2026-11-19: the branch table is split into groups, in this order: Active
   (HEAD, the base, and unmerged local branches with a commit in the last 14
   days), Local and remote (other local branches that are also on a remote),
@@ -161,7 +178,7 @@ Steps 1–9 are done. Open questions are below; anything new starts as an issue.
   With the button on, such lines are named after their tag ("… (tag only, on
   no branch)" on hover), and a commit a merge brought in without a branch name
   in its message gets the pull request number (`#726`) instead of "merged
-  branch".
+  branch". *Since 2026-11-21 this is a check box kept between sessions (below).*
 - 2026-11-20: the API has no place for a mod's own icon in the desktop app's
   toolbar or sidebar. Instead the mod draws a row above the prompt
   (`AbovePrompt`) with a **Branchline** button and the checked-out branch
@@ -175,7 +192,8 @@ Steps 1–9 are done. Open questions are below; anything new starts as an issue.
   documentation, at `dvalfrid/git-branchline`. The repository is its own
   marketplace (`.claude-plugin/marketplace.json`). CI runs
   `claude plugin validate` and `claude plugin test` on every push and pull
-  request.
+  request. *Now the Checks workflow, which also checks the code rules and
+  types (below).*
 - 2026-11-21: all the pane's buttons are in one row under the headline: the
   two tabs, then (on the Graph tab) **Fold quiet stretches** and **Show
   tag-only commits**. A header that stays put while the content scrolls was
@@ -199,7 +217,8 @@ Steps 1–9 are done. Open questions are below; anything new starts as an issue.
   changed, the two are drawn as check boxes (`☐`/`☑` on a plain Button, since
   there is no check box element), their labels fixed. A height change from
   new commits does not reopen the pane; whether it trips the same fault is
-  not known yet.
+  not known yet. *Corrected below: the fault comes from the keyboard, not
+  the height.*
 - 2026-11-21: **Fold quiet stretches** and **Show tag-only commits** moved
   from the pane to the plugin's settings (`userConfig` in `plugin.json`:
   `foldQuietStretches` `auto`/`always`/`never`, `showTagOnlyCommits`), so they
@@ -210,7 +229,10 @@ Steps 1–9 are done. Open questions are below; anything new starts as an issue.
   scrolling fault above. The desktop app's plugin settings list only
   installed plugins, not one loaded from a folder, so the pane changes them
   itself through `$.config.set` (as the config menu would): a picker for
-  folding and a check box for tag-only commits, beside the tabs.
+  folding and a check box for tag-only commits, beside the tabs. *Superseded
+  the same day: `$.config.set` finds no rows for such a plugin, so the pane
+  keeps the settings in `$.store`, as two check boxes; `drawnWith` and the
+  picker are gone (below).*
 - 2026-11-21, corrected: the scrolling fault comes from the keyboard, not
   from the graph's height. Once a press or a pick in the pane gives it the
   keyboard, the desktop app stops scrolling short of the top (a scroll event
@@ -220,8 +242,9 @@ Steps 1–9 are done. Open questions are below; anything new starts as an issue.
   draft (`$.prompt.fill`) was tried and does not move it. So a change of
   either setting closes the pane and opens it again (dropping the keyboard;
   the app slides it in, and settings change seldom), and while `isFocused`
-  after any other press the pane says "Esc to scroll freely". To be reported
-  to Anthropic.
+  after any other press the pane says "Esc to scroll freely". Reported as
+  [anthropics/claude-code#111465](https://github.com/anthropics/claude-code/issues/111465);
+  if it is fixed, the reopening and the Esc line can go.
 - 2026-11-21: `$.config.set` finds no settings rows for a plugin loaded from a
   folder in the desktop app, and its Plugins settings list only installed
   plugins. So the pane keeps the two settings itself in `$.store` (`prefs`),
@@ -283,6 +306,7 @@ Steps 1–9 are done. Open questions are below; anything new starts as an issue.
   commit; the tag, the pushes and the GitHub release were finished by hand in
   the script's order, and the script now passes `--force` (it checks tracked
   changes and the tag itself). A fresh install from GitHub gets 0.2.0.
+  *Since then the script tags with `git tag`, not `claude plugin tag` (below).*
 - 2026-11-21: release tags are plain `vX.Y.Z`. `claude plugin tag` names them
   `<plugin>--vX.Y.Z`, for repositories holding several plugins; this one holds
   one. `scripts/release.mjs` now tags with `git tag` and checks itself that
@@ -300,3 +324,20 @@ Steps 1–9 are done. Open questions are below; anything new starts as an issue.
   no longer the way. The bot's release commits are not signed, and a push
   with the built-in token does not start the Checks workflow; the release
   runs every check itself first.
+- 2026-11-21: the website, https://git-branchline.codeby.se, is one static
+  page in `docs/` (no build step, no dependencies), served by GitHub Pages
+  from `main`, with `docs/CNAME` and a CNAME record at the registrar pointing
+  `git-branchline` at `dvalfrid.github.io`. GitHub issued no HTTPS
+  certificate until the custom domain was removed and added again in the
+  Pages settings (which committed "Delete CNAME" and "Create CNAME"); HTTPS
+  is enforced. A browser that opened the site before the certificate may keep
+  GitHub's `*.github.io` one until it reconnects.
+- 2026-11-21: the README's animated picture (`docs/branchline.gif`) is drawn
+  with the mod's own code (`repo.ts` and `core/`, run with Node against a
+  demo repository, rendered in a browser and put together with Pillow), not a
+  screen recording: this session had no screen capture. It shows the graph,
+  not the pane around it; a real screenshot is still wanted.
+- 2026-11-21: repository settings: private vulnerability reporting is on (the
+  route `SECURITY.md` gives), the wiki is off (documentation lives in the
+  repository), and Dependabot keeps the workflows' actions current. `main` is
+  not protected: the Release workflow pushes to it with the built-in token.

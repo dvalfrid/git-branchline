@@ -29,6 +29,6 @@ body:
     id: versions
     attributes:
       label: Versions
-      description: Output of `claude --version` and `git --version`, and your OS.
+      description: Branchline's version (`claude plugin list`), the output of `claude --version` and `git --version`, and your OS.
     validations:
       required: true

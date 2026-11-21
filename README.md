@@ -1,5 +1,7 @@
 # Branchline for Claude Code
 
+[![Checks](https://github.com/dvalfrid/git-branchline/actions/workflows/checks.yml/badge.svg)](https://github.com/dvalfrid/git-branchline/actions/workflows/checks.yml)
+
 [git-branchline.codeby.se](https://git-branchline.codeby.se)
 
 `git-branchline` is a Claude Code mod that shows the Git history of the
@@ -15,12 +17,12 @@ Git client.
 
 - **Graph tab**: the commit graph, colored by branch, with ref pills, `HEAD`
   marked and hover tooltips. Long quiet stretches fold into one row when the
-  graph does not fit (see Settings). Commits only a tag keeps are hidden unless you ask for
-  them.
+  graph does not fit, and commits only a tag keeps are hidden; two check
+  boxes change both (see Settings).
 - **Branches tab**: branches grouped as Active, Local and remote, Remote only
-  and Old local, with age, ahead/behind bars and status. Open a branch to see
-  its commits and most changed files, ask Claude about it, copy its name, or
-  delete it.
+  and Old local, with age, ahead/behind bars and status, the first 30 of a
+  group at a time. Open a branch to see its commits and most changed files,
+  ask Claude about it, copy its name, or delete it.
 - **A row above the prompt** opens the pane while it is closed, with the
   checked-out branch and how it stands against the base.
 - **Terminal**: a text graph in the style of `git log --graph`.
@@ -49,10 +51,10 @@ From a shell:
 claude plugin install git-branchline --marketplace dvalfrid/git-branchline
 ```
 
-In the Claude desktop app, where `/plugin` does not run: click **+** next to
-the prompt box, then **Plugins**, **Add marketplace** with
-`dvalfrid/git-branchline`, then **Add plugin**. A mod installed from a
-terminal at the user scope also loads in the desktop app.
+In the Claude desktop app, where `/plugin` does not run: open **Settings**,
+then **Plugins**, press **Add** and add the marketplace
+`dvalfrid/git-branchline`, then add Branchline from it. A plugin installed
+from a terminal at the user scope also loads in the desktop app.
 
 The install clones over SSH and falls back to HTTPS, so no GitHub key is
 needed. It may say that two userConfig options are not set: both have
@@ -60,7 +62,24 @@ defaults (see Settings), so there is nothing to configure.
 
 Requires Git on `PATH`. Git 2.41 or later reads ahead/behind counts in one
 call; older versions fall back to one `rev-list` per branch, which takes
-seconds in a repository with hundreds of branches.
+seconds in a repository with hundreds of branches. Tried with Claude Code
+2.1.326 and Git 2.56; the mod API changes between Claude Code versions, so
+say in an issue if a newer one breaks it.
+
+### Update and uninstall
+
+A new release reaches you when you ask for it, then restart Claude Code:
+
+```
+claude plugin update git-branchline@git-branchline
+```
+
+To remove it:
+
+```
+claude plugin uninstall git-branchline@git-branchline
+claude plugin marketplace remove git-branchline
+```
 
 ## Known issues
 
@@ -72,13 +91,13 @@ seconds in a repository with hundreds of branches.
   ([anthropics/claude-code#104733](https://github.com/anthropics/claude-code/issues/104733)).
   Branchline has not been tried there yet, nor on mobile.
 
-
 ## Settings
 
-Two settings, kept between sessions. Change them beside the tabs in the pane
-(two check boxes). Their defaults are the plugin's configuration
-(Claude Code's config menu, or `pluginConfigs` in `~/.claude/settings.json`);
-a change made in the pane wins over them:
+Two settings, kept between sessions. Change them with the two check boxes
+beside the tabs in the pane. Their defaults are the plugin's options, set
+with `claude plugin configure git-branchline@git-branchline` (stored under
+`pluginConfigs` in `~/.claude/settings.json`); a change made in the pane wins
+over them:
 
 | Setting | Values | Default |
 |---|---|---|

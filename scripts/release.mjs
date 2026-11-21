@@ -148,5 +148,5 @@ else {
     say(why)
   }
 }
-summary(`## Released ${plugin.name} ${version}\n\nTag \`${tag}\`. People who installed it get it with \`/plugin update ${plugin.name}\`.\n\n${notes}`)
-say(`done: people who installed ${plugin.name} get ${version} with /plugin update`)
+summary(`## Released ${plugin.name} ${version}\n\nTag \`${tag}\`. People who installed it get it with \`claude plugin update ${plugin.name}@${plugin.name}\`.\n\n${notes}`)
+say(`done: people who installed ${plugin.name} get ${version} with claude plugin update ${plugin.name}@${plugin.name}`)

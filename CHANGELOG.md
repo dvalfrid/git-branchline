@@ -23,7 +23,7 @@ All notable changes are listed here. Versions follow
 - A website at https://git-branchline.codeby.se, served by GitHub Pages from
   `docs/`.
 
-## 0.1.0
+## 0.1.0 (2026-11-20)
 
 First public version.
 

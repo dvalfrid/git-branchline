@@ -1,2 +1,4 @@
 .claude-plugin/types/
 node_modules/
+# Local Claude Code files (launch configs, notes); the project shares none.
+.claude/
