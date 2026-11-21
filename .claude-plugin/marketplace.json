@@ -1,6 +1,18 @@
 {
   "name": "git-branchline",
   "description": "Branchline for Claude Code: a live Git history pane beside the chat",
-  "owner": { "name": "Daniel Valfridsson" },
-  "plugins": [{ "name": "git-branchline", "source": "./" }]
+  "owner": {
+    "name": "Daniel Valfridsson"
+  },
+  "plugins": [
+    {
+      "name": "git-branchline",
+      "source": {
+        "source": "github",
+        "repo": "dvalfrid/git-branchline",
+        "ref": "v0.1.0"
+      },
+      "version": "0.1.0"
+    }
+  ]
 }

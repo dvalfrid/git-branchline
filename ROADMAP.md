@@ -267,3 +267,15 @@ Steps 1–9 are done. Open questions are below; anything new starts as an issue.
   The types list only the tools the machine registers, and a session without
   PowerShell (Linux, or a fresh one) has none, so the PowerShell hook matches
   `/^PowerShell$/` and reads `command` only after checking it is there.
+- 2026-11-21: releases. Tried in throwaway configurations with a local
+  marketplace: `claude plugin update` follows the version in `plugin.json`, not
+  commits (a new commit at the same version is "already at the latest"),
+  and with the entry's source at `./` a new install got `main` as it stood,
+  under the old number. So the marketplace entry points at a release tag
+  (`source: github`, `ref`), tried end to end: a fresh install got the tag
+  while `main` held other work, and moving the entry to the next tag updated
+  to exactly that tag. `scripts/release.mjs` does a release in order (checks,
+  version and entry, CHANGELOG, commit, `claude plugin tag`, tag pushed before
+  `main`, GitHub release); tried against a local remote. Until 0.2.0 the entry
+  points at the existing tag `v0.1.0`; from then on tags are named
+  `git-branchline--vX.Y.Z`, as `claude plugin tag` makes them.

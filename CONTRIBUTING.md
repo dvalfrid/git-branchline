@@ -57,10 +57,31 @@ Then `npx -p typescript@5 tsc -p .` type-checks the code, tests included.
 4. Record a decision or a ticked step in `ROADMAP.md` in the same commit, and
    add a line to `CHANGELOG.md` under Unreleased.
 
-A release raises `version` in `.claude-plugin/plugin.json`: Claude Code keeps
-an installed plugin per version, so people who installed it get the change
-only when the number changes. Then tag it (`vX.Y.Z`) and move the Unreleased
-lines in `CHANGELOG.md` under that version.
+## Releases
+
+Work lands on `main` without reaching anyone who installed the plugin: the
+marketplace entry (`.claude-plugin/marketplace.json`) points at a release
+tag, not at `main`, and Claude Code updates an installed plugin only when its
+version changes. A new install gets the latest release, never work in
+progress.
+
+To release, from a clean `main` that is even with `origin`:
+
+```
+node scripts/release.mjs 0.2.0 --dry-run
+node scripts/release.mjs 0.2.0
+```
+
+The script runs the checks, sets the version in `plugin.json` and in the
+marketplace entry, points the entry at the tag `git-branchline--v0.2.0`,
+moves the Unreleased lines in `CHANGELOG.md` under `0.2.0`, commits
+"Release 0.2.0", tags it with `claude plugin tag` (which checks that the two
+versions agree), pushes the tag and then `main` (so the entry never points at
+a tag that is not there yet), and makes a GitHub release with the changelog
+lines. People get it with `/plugin update git-branchline` and a restart.
+
+Versions follow [Semantic Versioning](https://semver.org/): a fix raises the
+last number, a feature the middle one.
 
 ## Rules the code keeps
 

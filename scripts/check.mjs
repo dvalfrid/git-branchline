@@ -8,7 +8,7 @@
 //   node scripts/check.mjs --base X   also warns when hooks/ changed since X
 //                                     but CHANGELOG.md did not (pull requests)
 
-import { execFileSync } from 'node:child_process'
+import { execFileSync, execSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 
@@ -121,7 +121,12 @@ for (const file of files) {
 // 4. Gating hooks have a .catch, so an error in the mod never stops Claude's
 //    commands. `claude plugin validate` reports one without; make it fail.
 try {
-  const out = execFileSync('claude', ['plugin', 'validate', root], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], shell: process.platform === 'win32' })
+  // On Windows claude may be a .cmd file, which runs only through a shell.
+  const options = { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }
+  const out =
+    process.platform === 'win32'
+      ? execSync(`claude plugin validate "${root}"`, options)
+      : execFileSync('claude', ['plugin', 'validate', root], options)
   for (const line of out.split('\n')) {
     if (/gating hook without \.catch/i.test(line)) fail('hooks', 1, line.trim().replace(/^>\s*/, ''))
   }
