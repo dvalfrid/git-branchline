@@ -283,7 +283,7 @@ Steps 1–9 are done. Open questions are below; anything new starts as an issue.
   commit; the tag, the pushes and the GitHub release were finished by hand in
   the script's order, and the script now passes `--force` (it checks tracked
   changes and the tag itself). A fresh install from GitHub gets 0.2.0.
-\n- 2026-11-21: release tags are plain `vX.Y.Z`. `claude plugin tag` names them
+- 2026-11-21: release tags are plain `vX.Y.Z`. `claude plugin tag` names them
   `<plugin>--vX.Y.Z`, for repositories holding several plugins; this one holds
   one. `scripts/release.mjs` now tags with `git tag` and checks itself that
   `plugin.json`, the marketplace entry's version and its `ref` agree. 0.2.0,

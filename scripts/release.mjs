@@ -55,8 +55,8 @@ const isAbove = (a, b) => {
   return false
 }
 if (!isAbove(version, plugin.version)) stop(`${version} is not above the current version, ${plugin.version}`)
-// One plugin in this repository, so its tags are plain vX.Y.Z (0.2.0 alone was
-// tagged git-branchline--v0.2.0, as `claude plugin tag` names them).
+// One plugin in this repository, so its tags are plain vX.Y.Z, not the
+// <plugin>--vX.Y.Z that `claude plugin tag` makes for repositories of several.
 const tag = `v${version}`
 
 // Where the plugin is published: owner/name from the manifest's repository.
