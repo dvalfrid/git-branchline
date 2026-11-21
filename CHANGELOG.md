@@ -6,7 +6,15 @@ All notable changes are listed here. Versions follow
 ## Unreleased
 
 - All the pane's buttons are in one row under the headline.
-- An icon for the plugin directory (`.claude-plugin/icon.png`, drawn from`n  `assets/icon.svg`).
+- **Fold quiet stretches** and **Show tag-only commits** sit beside the tabs
+  as check boxes, and are
+  kept between sessions. Their defaults are settings (`userConfig`). A folded
+  row lists its commits on hover.
+- Changing either setting opens the pane again. After any other press, while
+  the pane holds the keyboard, it says "Esc to scroll freely": the desktop
+  app can then stop scrolling short of the pane's top.
+- An icon for the plugin directory (`.claude-plugin/icon.png`, drawn from
+  `assets/icon.svg`).
 - An animated picture of the graph in the README (`docs/branchline.gif`).
 - A website at https://git-branchline.codeby.se, served by GitHub Pages from `docs/`.
 

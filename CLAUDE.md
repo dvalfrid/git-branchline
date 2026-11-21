@@ -74,7 +74,7 @@ git-branchline/
 
 ```
 git for-each-ref --format=…%(ahead-behind:<base>)… refs/heads refs/remotes refs/tags
-git log --branches --remotes HEAD --date-order -n 200 --format=… (--all when tag-only commits are asked for)
+git log --branches --remotes HEAD --date-order -n 200 --format=… (--all with the showTagOnlyCommits setting)
 git rev-list --left-right --count <base>...<branch>   (fallback before git 2.41)
 ```
 
@@ -89,7 +89,8 @@ change lanes. Commits are colored by the branch that owns them
 
 **Folding:** a long run of commits in one lane with no refs and no forks
 becomes one row ("12 commits (Lars, Linda, …)"), drawn as a square. It
-happens only when the graph does not fit the pane, and a button toggles it.
+happens only when the graph does not fit the pane, unless the
+`foldQuietStretches` setting (`userConfig`) says `always` or `never`.
 
 **Per surface:**
 - `desktop`/`vscode`: an `Svg` element for the graph (source up to 131,072

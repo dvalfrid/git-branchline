@@ -1,5 +1,5 @@
 import { atom, read, update } from 'claude-code'
-import type { EngineInterface, Register } from 'claude-code'
+import type { EngineInterface, PluginOptions, Register } from 'claude-code'
 
 import type { Branch, BranchDetails, BranchGroup, FoldMode, Notice, PendingDelete, Snapshot, View } from '../types'
 import { compactCommits } from './core/compact'
@@ -24,10 +24,6 @@ const LOADING: Snapshot = { state: 'loading' }
 const snapshot = atom({ plugin: 'git-branchline', key: 'snapshot' } as const, LOADING, {
   shape: 'snapshot-2',
 })
-
-// Folding: 'auto' folds only when the commits do not fit in the pane; the
-// button sets 'fold' or 'expand' for the rest of the session.
-const foldMode = atom({ plugin: 'git-branchline', key: 'foldMode' } as const, 'auto' as FoldMode)
 
 // The branch opened in the Branches tab and what was read for it.
 const openedBranch = atom({ plugin: 'git-branchline', key: 'opened' } as const, null as BranchDetails | null, {
@@ -77,9 +73,6 @@ const runDelete = async ($: EngineInterface, root: string, names: string[]): Pro
   await watch($).check(true)
 }
 
-// Commits only a tag keeps (test builds, deleted branches) are left out unless asked for.
-const showTagOnly = atom({ plugin: 'git-branchline', key: 'showTagOnly' } as const, false)
-
 // Which tab the pane shows.
 const view = atom({ plugin: 'git-branchline', key: 'view' } as const, 'graph' as View)
 
@@ -104,11 +97,57 @@ const rowsThatFit = (bodyRows: number): number => Math.floor((bodyRows * PX_PER_
 const refresh = async ($: EngineInterface): Promise<void> => {
   let next: Snapshot
   try {
-    next = await readRepo(argv => $.process.run(argv), new Date(), { includeTagOnly: await read($, showTagOnly) })
+    next = await readRepo(argv => $.process.run(argv), new Date(), { includeTagOnly: (await read($, prefs)).tagOnly })
   } catch (error) {
     next = { state: 'error', message: error instanceof Error ? error.message : String(error) }
   }
   await update($, snapshot, () => next)
+}
+
+// Two settings, kept between sessions and chats: folding of quiet stretches
+// and tag-only commits. The plugin's userConfig gives the defaults (the config
+// menu, or settings.json); a change made in the pane is kept in $.store and
+// wins. The desktop app lists no settings for a plugin loaded from a folder,
+// so the pane is where they are changed there.
+type FoldOption = 'auto' | 'always' | 'never'
+type Prefs = { fold: FoldOption; tagOnly: boolean }
+const isFold = (value: unknown): value is FoldOption => value === 'auto' || value === 'always' || value === 'never'
+const prefsOf = (options: PluginOptions, stored: unknown): Prefs => {
+  const kept = (stored && typeof stored === 'object' ? stored : {}) as Partial<Record<keyof Prefs, unknown>>
+  return {
+    fold: isFold(kept.fold) ? kept.fold : isFold(options.foldQuietStretches) ? options.foldQuietStretches : 'auto',
+    tagOnly: typeof kept.tagOnly === 'boolean' ? kept.tagOnly : options.showTagOnlyCommits === true,
+  }
+}
+const foldModeOf = (fold: FoldOption): FoldMode => (fold === 'always' ? 'fold' : fold === 'never' ? 'expand' : 'auto')
+const PREFS_KEY = 'prefs'
+const prefs = atom({ plugin: 'git-branchline', key: 'prefs' } as const, { fold: 'auto', tagOnly: false } as Prefs)
+let options: PluginOptions = {}
+
+/** Reads the settings: what the pane kept, else the userConfig defaults. */
+const loadPrefs = async ($: EngineInterface): Promise<void> => {
+  const stored = await $.store.get(PREFS_KEY).catch(() => undefined)
+  await update($, prefs, () => prefsOf(options, stored))
+}
+
+/**
+ * Changes a setting from the pane: drawn at once, kept for later sessions.
+ *
+ * The press or pick gave the pane the keyboard, and while it holds the
+ * keyboard the desktop app stops scrolling it short of the top. A mod cannot
+ * hand the keyboard back (filling the prompt box does not move it), so on a
+ * graphical surface the pane is closed and opened again, which drops it.
+ * Settings change seldom; tabs and branch buttons show an Esc hint instead.
+ */
+const setPref = async ($: EngineInterface, change: Partial<Prefs>, surface: string): Promise<void> => {
+  const next = { ...(await read($, prefs)), ...change }
+  await update($, prefs, () => next)
+  await $.store.set(PREFS_KEY, next)
+  if (change.tagOnly !== undefined) await watch($).check(true)
+  if (surface !== 'terminal') {
+    await $.ui.close({ id: PANE })
+    await showPane($)
+  }
 }
 
 // One watcher per load of the module: a reload starts over (and stops the
@@ -141,7 +180,8 @@ const openPane = async ($: EngineInterface): Promise<void> => {
   })
 }
 
-export const register: Register = on => {
+export const register: Register = (on, given) => {
+  options = given
   on('session.attach', async ($, e, next) => {
     const attached = await next(e)
     void openPane($)
@@ -157,6 +197,8 @@ export const register: Register = on => {
       .then(panes => update($, paneUp, () => panes.some(pane => pane.id === PANE)))
       .catch(() => undefined)
     void openPane($)
+    // The settings first, so the first read knows whether to take tag-only commits.
+    await loadPrefs($).catch(() => undefined)
     void watch($).check(true)
 
     $.clock.every(POLL_MS, () => void watch($).check())
@@ -165,6 +207,7 @@ export const register: Register = on => {
   })
 
   on('command.run', { command: 'branchline' }, async $ => {
+    await loadPrefs($).catch(() => undefined)
     await showPane($)
     await watch($).check(true)
 
@@ -221,10 +264,10 @@ export const register: Register = on => {
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
     const { Box, Text, Markdown, Svg, Button } = $.ui.resolve(e)
     const shot = await read($, snapshot)
-    const mode = await read($, foldMode)
+    const chosen = await read($, prefs)
+    const mode = foldModeOf(chosen.fold)
     const hidden = await read($, hiddenGroups)
     const tab = await read($, view)
-    const tagOnly = await read($, showTagOnly)
     const opened = await read($, openedBranch)
     const pending = await read($, pendingDelete)
     const notice = await read($, noticeAtom)
@@ -244,13 +287,9 @@ export const register: Register = on => {
     const colorOfEdge = (edge: (typeof layout.edges)[number]) => { const o = edgeOwner(edge, rowIds, owners); return o === undefined ? edge.viaLane : owners.owners[o]!.color }
     const width = graphWidth(e.props.bodyColumns)
 
+    // One row under the headline: the tabs, then (on the Graph tab) the two
+    // settings as check boxes, kept between sessions.
     const onGraph = tab === 'graph' && shot.commits.length > 0 && e.surface !== 'mobile'
-    // The fold button only where folding changes something.
-    const canFold = folded
-      ? rows.length < shot.commits.length
-      : compactCommits(shot.commits).length < shot.commits.length
-
-    // One row of buttons under the headline: the tabs, then what the Graph tab can change.
     const toolbar = (
       <Box flexDirection="row" flexWrap="wrap" columnGap={1} rowGap={1}>
         {(['graph', 'branches'] as const).map(id => (
@@ -262,21 +301,32 @@ export const register: Register = on => {
             {id === 'graph' ? 'Graph' : `Branches (${shot.branches.length})`}
           </Button>
         ))}
-        {onGraph && canFold && (
-          <Button key="compact" dimColor onPress={() => void update($, foldMode, () => (folded ? 'expand' : 'fold'))}>
-            {folded ? 'Show every commit' : 'Fold quiet stretches'}
+        {onGraph && (
+          // Checked folds when the graph does not fit (or always, if the
+          // userConfig default says so); unchecked never folds.
+          <Button
+            key="fold"
+            plain
+            dimColor={chosen.fold === 'never'}
+            onPress={press => void setPref($, { fold: chosen.fold === 'never' ? 'auto' : 'never' }, press.surface).catch(() => undefined)}
+          >
+            {`${chosen.fold === 'never' ? '☐' : '☑'} Fold quiet stretches`}
           </Button>
         )}
         {onGraph && (
           <Button
             key="tag-only"
-            dimColor
-            onPress={() =>
-              void update($, showTagOnly, value => !value).then(() => watch($).check(true))
-            }
+            plain
+            dimColor={!chosen.tagOnly}
+            onPress={press => void setPref($, { tagOnly: !chosen.tagOnly }, press.surface).catch(() => undefined)}
           >
-            {tagOnly ? 'Hide tag-only commits' : 'Show tag-only commits'}
+            {`${chosen.tagOnly ? '☑' : '☐'} Show tag-only commits`}
           </Button>
+        )}
+        {e.props.isFocused && e.surface !== 'terminal' && (
+          // While the pane holds the keyboard, the desktop app can stop
+          // scrolling short of the top; Esc hands the keyboard back.
+          <Text key="esc-hint" dimColor>Esc to scroll freely</Text>
         )}
       </Box>
     )

@@ -187,3 +187,44 @@ Steps 1–9 are done. Open questions are below; anything new starts as an issue.
   scroll only after each redraw, so it jumped. So the header scrolls with
   the content, until the API offers buttons in a pane's own title bar or a
   part that does not scroll.
+- 2026-11-21: in the desktop app, a graph `Svg` that changes height while the
+  pane is open puts the pane's scrolling out of step: the app believes it is
+  a few rows down (`offset` 2) while the scroll bar is at the top, sends no
+  scroll event upwards, and the headline can no longer be reached. Switching
+  tabs hid it for a moment; only a pane mounted afresh (switching chats) set
+  it right. Keying the graph by its size and drawing the pane short for a
+  moment did not help. So **Fold quiet stretches** and **Show tag-only
+  commits** close the pane and open it again (`$.ui.close`, then `$.ui.open`),
+  which the app animates. To make that movement feel like a setting being
+  changed, the two are drawn as check boxes (`☐`/`☑` on a plain Button, since
+  there is no check box element), their labels fixed. A height change from
+  new commits does not reopen the pane; whether it trips the same fault is
+  not known yet.
+- 2026-11-21: **Fold quiet stretches** and **Show tag-only commits** moved
+  from the pane to the plugin's settings (`userConfig` in `plugin.json`:
+  `foldQuietStretches` `auto`/`always`/`never`, `showTagOnlyCommits`), so they
+  are kept between sessions and chats. They are seldom changed, and a folded
+  row lists its commits on hover. A change reloads the module; `session.start`
+  compares the settings with those the pane was last drawn with (`drawnWith`)
+  and, when they differ and the pane is open, closes and opens it, for the
+  scrolling fault above. The desktop app's plugin settings list only
+  installed plugins, not one loaded from a folder, so the pane changes them
+  itself through `$.config.set` (as the config menu would): a picker for
+  folding and a check box for tag-only commits, beside the tabs.
+- 2026-11-21, corrected: the scrolling fault comes from the keyboard, not
+  from the graph's height. Once a press or a pick in the pane gives it the
+  keyboard, the desktop app stops scrolling short of the top (a scroll event
+  says `offset` 2 while the scroll bar is at the top, and none comes upwards);
+  Esc, which hands the keyboard back, sets it right, as does switching chats.
+  A mod cannot hand the keyboard back: filling the prompt box with its own
+  draft (`$.prompt.fill`) was tried and does not move it. So a change of
+  either setting closes the pane and opens it again (dropping the keyboard;
+  the app slides it in, and settings change seldom), and while `isFocused`
+  after any other press the pane says "Esc to scroll freely". To be reported
+  to Anthropic.
+- 2026-11-21: `$.config.set` finds no settings rows for a plugin loaded from a
+  folder in the desktop app, and its Plugins settings list only installed
+  plugins. So the pane keeps the two settings itself in `$.store` (`prefs`),
+  read at `session.start` and `/branchline`; the `userConfig` values are the
+  defaults when nothing is kept. Two check boxes (folding: checked `auto`,
+  unchecked `never`; tag-only commits) sit beside the tabs.

@@ -15,7 +15,7 @@ Git client.
 
 - **Graph tab**: the commit graph, colored by branch, with ref pills, `HEAD`
   marked and hover tooltips. Long quiet stretches fold into one row when the
-  graph does not fit. Commits only a tag keeps are hidden unless you ask for
+  graph does not fit (see Settings). Commits only a tag keeps are hidden unless you ask for
   them.
 - **Branches tab**: branches grouped as Active, Local and remote, Remote only
   and Old local, with age, ahead/behind bars and status. Open a branch to see
@@ -56,6 +56,22 @@ terminal at the user scope also loads in the desktop app.
 
 Requires Git on `PATH`. Git 2.41 or later reads ahead/behind counts in one
 call; older versions fall back to one `rev-list` per branch.
+
+## Settings
+
+Two settings, kept between sessions. Change them beside the tabs in the pane
+(two check boxes). Their defaults are the plugin's configuration
+(Claude Code's config menu, or `pluginConfigs` in `~/.claude/settings.json`);
+a change made in the pane wins over them:
+
+| Setting | Values | Default |
+|---|---|---|
+| `foldQuietStretches` | `auto` (only when the graph does not fit), `always`, `never` | `auto` |
+| `showTagOnlyCommits` | `true`, `false` | `false` |
+
+Unchecked, **Fold quiet stretches** never folds; checked, it folds when the
+graph does not fit (`auto`), or always if the default says `always`. A
+folded row lists its commits when you hover it.
 
 ## Develop
 

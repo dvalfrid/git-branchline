@@ -174,23 +174,16 @@ test('quiet stretches fold when they do not fit, and the button shows every comm
 
   await $.command.run({ command: 'branchline' })
 
-  // A tall pane has room for all nine: nothing folds until the button asks.
+  // A tall pane has room for all nine: nothing folds.
   const tall = await $.ui.mount({ ...PANE, surface: 'desktop' })
   expect(((await tall.find({ type: 'Svg' }))?.props as { alt: string }).alt).toBe('Commit graph: 9 commits on 1 lane.')
-  expect((await tall.find({ key: 'compact' }))?.text).toBe('Fold quiet stretches')
   await tall.unmount()
 
   // A short pane folds by itself.
   const ui = await $.ui.mount({ ...PANE, surface: 'desktop', props: { ...PANE.props, scroll: { offset: 0, bodyRows: 10 } } })
-
   const svg = async () => (await ui.find({ type: 'Svg' }))?.props as { alt: string; source: string }
   expect((await svg()).alt).toBe('Commit graph: 3 rows (9 commits, quiet stretches folded) on 1 lane.')
   expect((await svg()).source).toContain('7 commits')
-  expect((await ui.find({ key: 'compact' }))?.text).toBe('Show every commit')
-
-  await ui.press({ key: 'compact' })
-  expect((await svg()).alt).toBe('Commit graph: 9 commits on 1 lane.')
-  expect((await ui.find({ key: 'compact' }))?.text).toBe('Fold quiet stretches')
   await ui.unmount()
 })
 
@@ -410,24 +403,28 @@ test('with no surface yet, the pane opens when one attaches instead of failing',
   expect(opened).toEqual(['branchline'])
 })
 
-test('the graph reads branch history only, until tag-only commits are asked for', async ($, on) => {
-  const logs: string[] = []
+const logsOf = (on: Parameters<Parameters<typeof test>[1]>[1], logs: string[]) => {
   on('command.register', () => ({ value: { command: 'branchline' } }))
   on('ui.open', () => ({ value: { isPlaced: true } }))
   on('process.run', (_, e) => {
     if (e.argv.includes('log') && e.argv.some(arg => arg.startsWith('--format=%h%x1f%p'))) logs.push(e.argv.join(' '))
     return { value: fakeGit(e.argv) }
   })
+}
+
+test('the graph reads branch history only by default', async ($, on) => {
+  const logs: string[] = []
+  logsOf(on, logs)
   await $.command.run({ command: 'branchline' })
   expect(logs.at(-1)).toContain(' log --branches --remotes HEAD ')
   expect(logs.at(-1)).not.toContain('--all')
+})
 
-  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
-  await ui.press({ key: 'tag-only' })
-  await settle()
+test('the Show tag-only commits setting reads every ref', { options: { showTagOnlyCommits: true } }, async ($, on) => {
+  const logs: string[] = []
+  logsOf(on, logs)
+  await $.command.run({ command: 'branchline' })
   expect(logs.at(-1)).toContain(' log --all ')
-  expect((await ui.find({ key: 'tag-only' }))?.text).toBe('Hide tag-only commits')
-  await ui.unmount()
 })
 
 const BAND = {
@@ -481,7 +478,7 @@ test('no row above the prompt outside a Git repository', async ($, on) => {
   await band.unmount()
 })
 
-test('every button sits in one row under the headline', async ($, on) => {
+const nineCommits = (on: Parameters<Parameters<typeof test>[1]>[1]) => {
   const log =
     Array.from({ length: 9 }, (_, i) =>
       row(`c${i}`, i < 8 ? `c${i + 1}` : '', '2026-11-01', 'Lars', i === 0 ? 'HEAD -> main' : '', `edit ${i}`),
@@ -498,20 +495,53 @@ test('every button sits in one row under the headline', async ($, on) => {
     if (args.includes('symbolic-ref')) return { value: { exitCode: 1, stdout: '', stderr: '' } }
     return { value: fakeGit(e.argv) }
   })
+}
 
+test('with folding set to never, a short pane draws every commit; the settings sit beside the tabs', { options: { foldQuietStretches: 'never' } }, async ($, on) => {
+  nineCommits(on)
   await $.command.run({ command: 'branchline' })
   const ui = await $.ui.mount({ ...PANE, surface: 'desktop', props: { ...PANE.props, scroll: { offset: 0, bodyRows: 10 } } })
-  await ui.press({ key: 'compact' })
+  expect(((await ui.find({ type: 'Svg' }))?.props as { alt: string }).alt).toBe('Commit graph: 9 commits on 1 lane.')
+  expect((await ui.findAll({ type: 'Button' })).map(button => button.text)).toEqual(['Graph', 'Branches (1)', '☐ Fold quiet stretches', '☐ Show tag-only commits'])
+  await ui.unmount()
+})
 
-  const svg = async () => (await ui.find({ type: 'Svg' }))?.props as { source: string; height: number }
-  expect((await svg()).height).toBe(9 * 24)
+test('with folding set to always, a tall pane folds too', { options: { foldQuietStretches: 'always' } }, async ($, on) => {
+  nineCommits(on)
+  await $.command.run({ command: 'branchline' })
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  expect(((await ui.find({ type: 'Svg' }))?.props as { alt: string }).alt).toBe('Commit graph: 3 rows (9 commits, quiet stretches folded) on 1 lane.')
+  await ui.unmount()
+})
 
-  // Every button sits in one row: the tabs, then what the Graph tab can change.
-  expect((await ui.findAll({ type: 'Button' })).map(button => button.text)).toEqual([
-    'Graph',
-    'Branches (1)',
-    'Fold quiet stretches',
-    'Show tag-only commits',
-  ])
+const storeIn = (on: Parameters<Parameters<typeof test>[1]>[1], kept: Map<string, unknown>) => {
+  on('store.get', (_, e) => ({ value: kept.get(e.key) }))
+  on('store.set', (_, e) => {
+    kept.set(e.key, e.value)
+    return { value: undefined }
+  })
+}
+
+test('the settings changed in the pane are kept for later sessions', async ($, on) => {
+  const kept = new Map<string, unknown>()
+  nineCommits(on)
+  storeIn(on, kept)
+  await $.command.run({ command: 'branchline' })
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  await ui.press({ key: 'fold' })
+  await ui.press({ key: 'tag-only' })
+  await settle()
+  expect(kept.get('prefs')).toEqual({ fold: 'never', tagOnly: true })
+  expect((await ui.find({ key: 'fold' }))?.text).toBe('☐ Fold quiet stretches')
+  expect((await ui.find({ key: 'tag-only' }))?.text).toBe('☑ Show tag-only commits')
+  await ui.unmount()
+})
+
+test('what the pane kept wins over the userConfig default', { options: { foldQuietStretches: 'never' } }, async ($, on) => {
+  nineCommits(on)
+  storeIn(on, new Map<string, unknown>([['prefs', { fold: 'always', tagOnly: false }]]))
+  await $.command.run({ command: 'branchline' })
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  expect(((await ui.find({ type: 'Svg' }))?.props as { alt: string }).alt).toBe('Commit graph: 3 rows (9 commits, quiet stretches folded) on 1 lane.')
   await ui.unmount()
 })

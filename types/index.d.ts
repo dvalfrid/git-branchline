@@ -91,14 +91,10 @@ declare module 'claude-code' {
   interface PluginState {
     'git-branchline': {
       snapshot: Shaped<Snapshot>
-      /** Folding of quiet chains: 'auto' folds only when the graph does not fit. */
-      foldMode: FoldMode
       /** Branch groups the person has folded away in the table. */
       hiddenGroups: BranchGroup[]
       /** The tab the pane shows. */
       view: View
-      /** Whether the graph also shows commits only a tag keeps. */
-      showTagOnly: boolean
       /** The branch opened in the Branches tab, with what was read for it. */
       opened: Shaped<BranchDetails | null>
       /** Local branches waiting for a second press to be deleted. */
@@ -107,6 +103,8 @@ declare module 'claude-code' {
       notice: Notice | null
       /** Whether the pane is open: the row above the prompt shows only while it is not. */
       paneUp: boolean
+      /** Folding of quiet stretches and tag-only commits: userConfig's defaults, or what the pane kept in $.store. */
+      prefs: { fold: 'auto' | 'always' | 'never'; tagOnly: boolean }
     }
   }
 }
