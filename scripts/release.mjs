@@ -111,7 +111,10 @@ writeFileSync(marketPath, nextMarket)
 writeFileSync(changelogPath, nextChangelog)
 run('git', ['add', pluginPath, marketPath, changelogPath])
 run('git', ['commit', '--quiet', '-m', `Release ${version}`])
-run('claude', ['plugin', 'tag', '.', '-m', `${plugin.name} %s`])
+// --force: claude plugin tag counts untracked files (a local .claude/ folder) as
+// changes; this script has already checked that nothing tracked is changed and
+// that the tag is new. The two versions are still checked to agree.
+run('claude', ['plugin', 'tag', '.', '--force', '-m', `${plugin.name} %s`])
 if (read('git', ['tag', '--list', tag]) !== tag) stop(`claude plugin tag did not make ${tag}`)
 
 // The tag first: the entry on main points at it.

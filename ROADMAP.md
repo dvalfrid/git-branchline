@@ -279,3 +279,8 @@ Steps 1–9 are done. Open questions are below; anything new starts as an issue.
   `main`, GitHub release); tried against a local remote. Until 0.2.0 the entry
   points at the existing tag `v0.1.0`; from then on tags are named
   `git-branchline--vX.Y.Z`, as `claude plugin tag` makes them.
+- 2026-11-21: 0.2.0 released with `scripts/release.mjs`. `claude plugin tag`
+  refused at first because of an untracked `.claude/` folder, after the release
+  commit; the tag, the pushes and the GitHub release were finished by hand in
+  the script's order, and the script now passes `--force` (it checks tracked
+  changes and the tag itself). A fresh install from GitHub gets 0.2.0.
