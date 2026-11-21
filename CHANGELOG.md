@@ -5,6 +5,8 @@ All notable changes are listed here. Versions follow
 
 ## Unreleased
 
+## 0.3.1 (2026-11-21)
+
 - Fixed: a branch name holding backticks (Git allows them) is shown and put
   in a prompt exactly, instead of with `'` in their place or broken apart.
 - `git diff` runs with `--no-ext-diff --no-textconv`, so a repository's own
