@@ -51,10 +51,30 @@ From a shell:
 claude plugin install git-branchline --marketplace dvalfrid/git-branchline
 ```
 
-In the Claude desktop app, where `/plugin` does not run: open **Settings**,
-then **Plugins**, press **Add** and add the marketplace
-`dvalfrid/git-branchline`, then add Branchline from it. A plugin installed
-from a terminal at the user scope also loads in the desktop app.
+In the Claude desktop app, where `/plugin` does not run:
+
+1. Open **Settings** → **Plugins**, press **Add**, then **Add marketplace**
+   and **Add from a repository**.
+
+   <img src="docs/install-1-add-marketplace.png" width="430" alt="The Add marketplace dialog: Browse Anthropic sources, or Add from a repository">
+
+2. Enter `dvalfrid/git-branchline` as the URL and press **Sync**.
+
+   <img src="docs/install-2-repository.png" width="430" alt="The Add marketplace dialog with a URL field for a GitHub owner/repo or a Git URL">
+
+3. The **Directory** opens on the marketplace. Pick **Git branchline** (or
+   press its **+**).
+
+   <img src="docs/install-3-directory.png" width="700" alt="The plugin Directory showing the git-branchline marketplace and its Git branchline plugin">
+
+4. Choose **Install** → **Install for me** to have it in every project on
+   this machine, or a project scope to share it through `.claude/` or keep
+   it in `.claude.local/`.
+
+   <img src="docs/install-4-install.png" width="700" alt="Git branchline in the Directory with the Install menu open: Install for me, Install for project (shared), Install for project (personal)">
+
+A plugin installed from a terminal at the user scope also loads in the
+desktop app.
 
 The install clones over SSH and falls back to HTTPS, so no GitHub key is
 needed. It may say that two userConfig options are not set: both have
