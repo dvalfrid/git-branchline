@@ -44,6 +44,8 @@ button.copy:hover{background:#fff}
 .window .bar i{width:11px;height:11px;border-radius:50%;background:#4a4945}
 .window img{display:block;width:100%;height:auto}
 .caption{color:var(--dim);font-size:14px;text-align:center;margin-top:12px}
+.shots{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;align-items:start;margin-top:28px}
+.shots img{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:12px;box-shadow:0 20px 50px #0007}
 section{padding:72px 0 0}
 h2{font-size:30px;margin:0 0 8px;letter-spacing:-.01em}
 .sub{color:var(--dim);margin:0 0 28px}
@@ -112,6 +114,11 @@ footer a{color:var(--dim)}
       <div class="card" style="--c:#9c9a92"><h3>Terminal too</h3><p>In a terminal session the graph is drawn as text in the style of <code>git log --graph</code>.</p></div>
       <div class="card" style="--c:var(--amber)"><h3>Two settings</h3><p>Check boxes beside the tabs fold quiet stretches (by default only when the graph does not fit) and show commits only a tag keeps. They are kept between sessions.</p></div>
     </div>
+    <div class="shots">
+      <img src="screenshot-graph.png" width="703" height="851" loading="lazy" alt="The Branchline pane in the Claude desktop app: the Graph tab of a repository with several branches, release tags and folded stretches">
+      <img src="screenshot-branches.png" width="709" height="418" loading="lazy" alt="The Branches tab: active branches with HEAD marked, how far each is behind and ahead of main, and branches that are only on the remote">
+    </div>
+    <p class="caption">The pane in the Claude desktop app, on a real repository.</p>
   </section>
 
   <section>
@@ -139,7 +146,7 @@ footer a{color:var(--dim)}
         <pre>claude plugin install git-branchline --marketplace dvalfrid/git-branchline</pre>
       </div>
     </div>
-    <p class="sub" style="margin-top:20px">A new release reaches you when you run <code>claude plugin update git-branchline@git-branchline</code> and restart Claude Code. Tried with Claude Code 2.1.326; see the <a href="https://github.com/dvalfrid/git-branchline#known-issues">known issues</a>.</p>
+    <p class="sub" style="margin-top:20px">A new release reaches you when you run <code>claude plugin update git-branchline@git-branchline</code> and restart Claude Code. Needs Claude Code 2.1.326 or later; see the <a href="https://github.com/dvalfrid/git-branchline#known-issues">known issues</a>.</p>
   </section>
 
   <footer>

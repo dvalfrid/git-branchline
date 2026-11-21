@@ -17,8 +17,9 @@ Steps 1–9 are done and 0.3.0 is released. Toward 1.0:
       an issue. An `engines["claude-code"]` range in plugin.json (honoured
       from 2.1.323) is not set yet.
 - [ ] Decide the open questions below.
-- [ ] A real screenshot of the pane for the README, the website and the
-      plugin directory.
+- [x] A real screenshot of the pane for the README, the website and the
+      plugin directory (`docs/screenshot-graph.png`,
+      `docs/screenshot-branches.png`, taken on a larger repository).
 - [ ] Submit to the plugin directory.
 - [x] The first release from the Release workflow: 0.3.0.
 

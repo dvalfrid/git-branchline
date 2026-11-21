@@ -28,6 +28,8 @@ Git client.
 - **Terminal**: a text graph in the style of `git log --graph`.
 - `/branchline` opens the pane and reads the repository again.
 
+<img src="docs/screenshot-graph.png" width="420" alt="The Graph tab in the Claude desktop app: a repository with several branches, release tags and folded stretches"> <img src="docs/screenshot-branches.png" width="420" alt="The Branches tab: active branches with HEAD marked, how far each is behind and ahead of main, and branches that are only on the remote">
+
 Branchline only reads the repository. The one exception: it can delete a
 **merged local** branch with `git branch -d` (which refuses unmerged work),
 after two presses. Anything else that changes the repository, such as
