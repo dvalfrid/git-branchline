@@ -1,0 +1,67 @@
+# Releases a version of the plugin: Actions → Release → Run workflow, or
+#   gh workflow run release.yml -f version=0.3.0
+# It runs scripts/release.mjs on a clean checkout of main: the checks, the
+# version in plugin.json and the marketplace entry, CHANGELOG.md, the commit
+# "Release X.Y.Z", the tag vX.Y.Z (pushed before main) and the GitHub release.
+# With "dry run" ticked it only shows what it would do.
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to release (X.Y.Z, above the current one)
+        required: true
+        type: string
+      dry_run:
+        description: Dry run (show what would happen, change nothing)
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+# One release at a time.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Release ${{ inputs.version }}${{ inputs.dry_run && ' (dry run)' || '' }}
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+      # As in the Checks workflow: a short session writes the API types (it
+      # stops at "Not logged in"), so the release can type-check.
+      - name: Write the Claude Code API types
+        run: |
+          CLAUDE_CODE_PLUGIN_DIR_WATCH=1 claude -p ok --plugin-dir . || true
+          test -f .claude-plugin/types/claude-code/index.d.ts
+      - name: Commit as GitHub Actions
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Release
+        env:
+          VERSION: ${{ inputs.version }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$DRY_RUN" = "true" ]; then
+            node scripts/release.mjs "$VERSION" --dry-run
+          else
+            node scripts/release.mjs "$VERSION"
+          fi

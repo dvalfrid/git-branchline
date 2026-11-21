@@ -134,6 +134,7 @@ teal `#1D9E75`, coral `#D85A30`, purple `#7F77DD`, pink `#D4537E`, blue `#378ADD
   permission prompts.
 - Keep `ROADMAP.md` current: tick steps and write decisions there in the same
   commit, and add user-visible changes to `CHANGELOG.md`.
-- Releases go through `node scripts/release.mjs X.Y.Z` (see CONTRIBUTING.md).
+- Releases go through the Release workflow (`gh workflow run release.yml -f
+  version=X.Y.Z`), which runs `scripts/release.mjs` (see CONTRIBUTING.md).
   The marketplace entry points at a release tag, so work on `main` reaches
   nobody until it is released. Never point the entry at `main` or `./`.

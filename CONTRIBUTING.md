@@ -65,12 +65,18 @@ tag, not at `main`, and Claude Code updates an installed plugin only when its
 version changes. A new install gets the latest release, never work in
 progress.
 
-To release, from a clean `main` that is even with `origin`:
+To release, run the **Release** workflow on GitHub: Actions → Release → Run
+workflow, with the version (tick "Dry run" first to see what it would do), or
 
 ```
-node scripts/release.mjs 0.2.0 --dry-run
-node scripts/release.mjs 0.2.0
+gh workflow run release.yml -f version=0.3.0 -f dry_run=true
+gh workflow run release.yml -f version=0.3.0
 ```
+
+It runs `scripts/release.mjs` on a clean checkout of `main`, as
+`github-actions[bot]`, and the run's summary shows the release notes. The
+same script can run locally from a clean `main` that is even with `origin`
+(`node scripts/release.mjs 0.3.0 --dry-run`, then without `--dry-run`).
 
 The script runs the checks, sets the version in `plugin.json` and in the
 marketplace entry, points the entry at the tag `v0.2.0`, moves the

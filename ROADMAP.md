@@ -290,3 +290,13 @@ Steps 1–9 are done. Open questions are below; anything new starts as an issue.
   first tagged `git-branchline--v0.2.0`, was tagged `v0.2.0` on the same
   commit; the entry and the GitHub release moved to it, and the old tag was
   deleted.
+- 2026-11-21: releases run on GitHub. The Release workflow (`release.yml`,
+  started by hand with a version and a dry-run box) runs `scripts/release.mjs`
+  on a clean checkout of `main` with the built-in token (`contents: write`),
+  committing as `github-actions[bot]`; it writes the API types first, so the
+  release type-checks. A failed GitHub release fails the job, and the run's
+  summary shows the notes. Releasing locally from a machine (where an
+  untracked folder and Windows quoting tripped 0.2.0) stays possible but is
+  no longer the way. The bot's release commits are not signed, and a push
+  with the built-in token does not start the Checks workflow; the release
+  runs every check itself first.

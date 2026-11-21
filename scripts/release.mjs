@@ -15,7 +15,7 @@
 // GitHub release with the changelog lines.
 
 import { execFileSync, execSync } from 'node:child_process'
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 const root = join(import.meta.dirname, '..')
@@ -25,9 +25,14 @@ const version = args.find(arg => !arg.startsWith('--'))
 const remote = 'origin'
 const branch = 'main'
 
+const inActions = process.env.GITHUB_ACTIONS === 'true'
 const stop = message => {
-  console.error(`release: ${message}`)
+  console.error(inActions ? `::error::release: ${message}` : `release: ${message}`)
   process.exit(1)
+}
+/** A line for the run's summary page on GitHub (the Release workflow). */
+const summary = text => {
+  if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${text}\n`)
 }
 const say = message => console.log(`release: ${message}`)
 // On Windows, claude and npx are often .cmd files, which run only through a
@@ -105,6 +110,7 @@ if (isDry) {
   say(`CHANGELOG.md: the Unreleased lines go under "## ${version} (${today})"`)
   say(`then: commit "Release ${version}", tag ${tag}, push the tag, push ${branch}, GitHub release ${tag}`)
   console.log(`\n${notes}\n`)
+  summary(`## Dry run: ${plugin.name} ${version}\n\nWould tag \`${tag}\`, point the marketplace entry at it and release:\n\n${notes}`)
   process.exit(0)
 }
 
@@ -136,7 +142,11 @@ else {
     run('gh', ['release', 'create', tag, '--repo', pushedTo, '--verify-tag', '--title', `${plugin.name} ${version}`, '--notes', notes], { quiet: true })
     say(`GitHub release made: https://github.com/${pushedTo}/releases/tag/${tag}`)
   } catch (error) {
-    say(`no GitHub release made (${String(error.message).split('\n')[0]}); make it from the tag by hand`)
+    // The tag and main are pushed; only the release page is missing.
+    const why = `no GitHub release made (${String(error.message).split('\n')[0]}); make it from the tag ${tag} by hand`
+    if (inActions) stop(why)
+    say(why)
   }
 }
+summary(`## Released ${plugin.name} ${version}\n\nTag \`${tag}\`. People who installed it get it with \`/plugin update ${plugin.name}\`.\n\n${notes}`)
 say(`done: people who installed ${plugin.name} get ${version} with /plugin update`)
