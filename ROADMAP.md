@@ -397,3 +397,6 @@ Anything new starts as an issue.
   Code By AB (https://codeby.se), the company that owns the domain and
   requests Verified, so the listing and the organization agree. The LICENSE
   copyright is Code By AB's too.
+- 2026-11-21: the website has a `robots.txt` and a one-page `sitemap.xml`
+  (its `lastmod` changes by hand when the page does), Open Graph and Twitter
+  card tags, and schema.org `SoftwareApplication` data naming Code By AB.
