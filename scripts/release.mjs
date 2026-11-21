@@ -8,9 +8,9 @@
 //
 // In order: checks that main is clean and even with origin; runs the checks;
 // sets the version in plugin.json and in the marketplace entry, points the
-// entry at the tag git-branchline--v0.2.0 and moves CHANGELOG.md's Unreleased
-// lines under 0.2.0; commits "Release 0.2.0"; tags it with `claude plugin tag`
-// (which checks that plugin.json and the entry agree); pushes the tag, then
+// entry at the tag v0.2.0 and moves CHANGELOG.md's Unreleased lines under
+// 0.2.0; commits "Release 0.2.0"; checks that plugin.json and the entry agree
+// and tags the commit v0.2.0; pushes the tag, then
 // main (so the entry never points at a tag that is not there); and makes a
 // GitHub release with the changelog lines.
 
@@ -55,7 +55,9 @@ const isAbove = (a, b) => {
   return false
 }
 if (!isAbove(version, plugin.version)) stop(`${version} is not above the current version, ${plugin.version}`)
-const tag = `${plugin.name}--v${version}`
+// One plugin in this repository, so its tags are plain vX.Y.Z (0.2.0 alone was
+// tagged git-branchline--v0.2.0, as `claude plugin tag` names them).
+const tag = `v${version}`
 
 // Where the plugin is published: owner/name from the manifest's repository.
 const repo = /github\.com[/:]([^/]+\/[^/.]+)/.exec(plugin.repository ?? '')?.[1]
@@ -111,11 +113,15 @@ writeFileSync(marketPath, nextMarket)
 writeFileSync(changelogPath, nextChangelog)
 run('git', ['add', pluginPath, marketPath, changelogPath])
 run('git', ['commit', '--quiet', '-m', `Release ${version}`])
-// --force: claude plugin tag counts untracked files (a local .claude/ folder) as
-// changes; this script has already checked that nothing tracked is changed and
-// that the tag is new. The two versions are still checked to agree.
-run('claude', ['plugin', 'tag', '.', '--force', '-m', `${plugin.name} %s`])
-if (read('git', ['tag', '--list', tag]) !== tag) stop(`claude plugin tag did not make ${tag}`)
+// What was committed must agree before it is tagged: plugin.json's version,
+// the marketplace entry's version and the tag the entry points at. Claude Code
+// takes plugin.json's version at install, and the entry's ref says what to fetch.
+const committed = file => JSON.parse(read('git', ['show', `HEAD:.claude-plugin/${file}`]))
+const committedEntry = committed('marketplace.json').plugins.find(p => p.name === plugin.name)
+if (committed('plugin.json').version !== version || committedEntry?.version !== version || committedEntry?.source?.ref !== tag) {
+  stop(`plugin.json, the marketplace entry and the tag do not agree on ${version}; the release commit is made but not tagged or pushed`)
+}
+run('git', ['tag', '--annotate', tag, '--message', `${plugin.name} ${version}`])
 
 // The tag first: the entry on main points at it.
 run('git', ['push', '--quiet', remote, `refs/tags/${tag}`])

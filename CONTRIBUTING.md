@@ -73,10 +73,10 @@ node scripts/release.mjs 0.2.0
 ```
 
 The script runs the checks, sets the version in `plugin.json` and in the
-marketplace entry, points the entry at the tag `git-branchline--v0.2.0`,
-moves the Unreleased lines in `CHANGELOG.md` under `0.2.0`, commits
-"Release 0.2.0", tags it with `claude plugin tag` (which checks that the two
-versions agree), pushes the tag and then `main` (so the entry never points at
+marketplace entry, points the entry at the tag `v0.2.0`, moves the
+Unreleased lines in `CHANGELOG.md` under `0.2.0`, commits "Release 0.2.0",
+checks that the two versions and the entry's tag agree, tags the commit
+`v0.2.0`, pushes the tag and then `main` (so the entry never points at
 a tag that is not there yet), and makes a GitHub release with the changelog
 lines. People get it with `/plugin update git-branchline` and a restart.
 

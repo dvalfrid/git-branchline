@@ -277,10 +277,16 @@ Steps 1–9 are done. Open questions are below; anything new starts as an issue.
   to exactly that tag. `scripts/release.mjs` does a release in order (checks,
   version and entry, CHANGELOG, commit, `claude plugin tag`, tag pushed before
   `main`, GitHub release); tried against a local remote. Until 0.2.0 the entry
-  points at the existing tag `v0.1.0`; from then on tags are named
-  `git-branchline--vX.Y.Z`, as `claude plugin tag` makes them.
+  pointed at the existing tag `v0.1.0`.
 - 2026-11-21: 0.2.0 released with `scripts/release.mjs`. `claude plugin tag`
   refused at first because of an untracked `.claude/` folder, after the release
   commit; the tag, the pushes and the GitHub release were finished by hand in
   the script's order, and the script now passes `--force` (it checks tracked
   changes and the tag itself). A fresh install from GitHub gets 0.2.0.
+\n- 2026-11-21: release tags are plain `vX.Y.Z`. `claude plugin tag` names them
+  `<plugin>--vX.Y.Z`, for repositories holding several plugins; this one holds
+  one. `scripts/release.mjs` now tags with `git tag` and checks itself that
+  `plugin.json`, the marketplace entry's version and its `ref` agree. 0.2.0,
+  first tagged `git-branchline--v0.2.0`, was tagged `v0.2.0` on the same
+  commit; the entry and the GitHub release moved to it, and the old tag was
+  deleted.
