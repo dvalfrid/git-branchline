@@ -7,6 +7,9 @@
     "name": "Daniel Valfridsson"
   },
   "homepage": "https://git-branchline.codeby.se",
+  "icon": "./.claude-plugin/icon.png",
+  "documentationUrl": "https://github.com/dvalfrid/git-branchline#readme",
+  "supportUrl": "https://github.com/dvalfrid/git-branchline/issues",
   "repository": "https://github.com/dvalfrid/git-branchline",
   "license": "MIT",
   "keywords": [

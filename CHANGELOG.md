@@ -5,6 +5,9 @@ All notable changes are listed here. Versions follow
 
 ## Unreleased
 
+- The plugin's icon, documentation and support links are set in
+  `plugin.json`, where the plugin directory reads them.
+
 ## 0.3.1 (2026-11-21)
 
 - Fixed: a branch name holding backticks (Git allows them) is shown and put
