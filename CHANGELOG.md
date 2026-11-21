@@ -5,6 +5,8 @@ All notable changes are listed here. Versions follow
 
 ## Unreleased
 
+## 0.3.0 (2026-11-21)
+
 - The desktop app's plugin Directory shows the plugin as **Branchline for
   Claude Code**, with a description, instead of "Git branchline".
 
