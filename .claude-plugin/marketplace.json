@@ -10,9 +10,9 @@
       "source": {
         "source": "github",
         "repo": "dvalfrid/git-branchline",
-        "ref": "v0.1.0"
+        "ref": "git-branchline--v0.2.0"
       },
-      "version": "0.1.0"
+      "version": "0.2.0"
     }
   ]
 }

@@ -5,6 +5,8 @@ All notable changes are listed here. Versions follow
 
 ## Unreleased
 
+## 0.2.0 (2026-11-21)
+
 - All the pane's buttons are in one row under the headline.
 - A branch group shows its first 30 branches, with **Show all N branches**
   below; each branch is a drawing of its own, and a repository can have
