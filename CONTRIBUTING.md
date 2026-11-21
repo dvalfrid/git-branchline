@@ -36,7 +36,15 @@ code if you have TypeScript installed.
    ```
    claude plugin validate .
    claude plugin test .
+   node scripts/check.mjs
    ```
+   `scripts/check.mjs` holds the code to the rules below: every git call
+   it finds must be a read (`rev-parse`, `for-each-ref`, `symbolic-ref`,
+   `log`, `rev-list`, `diff`) or `branch -d`, with a literal subcommand; no
+   shell as the program; `$.process.run` only through `repo.ts`; imports
+   only from `claude-code` or relative paths; no leftover script lines; and
+   no gating hook without `.catch`. CI runs it on every push and pull
+   request. A new git read goes on its list in the same change.
 3. Try it in a real session, on the surfaces you changed (desktop app,
    terminal), and say in the pull request which ones you tried.
 4. Record a decision or a ticked step in `ROADMAP.md` in the same commit, and

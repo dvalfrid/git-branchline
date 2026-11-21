@@ -53,8 +53,10 @@ git-branchline/
 - **Slash command:** `$.command.register({ name: 'branchline', … })` in
   `session.start`, answered by a `command.run` hook.
 - **Timer:** `$.clock.every(…)` (stopped on reload).
-- Checks: `claude plugin validate .`, `claude plugin test .`, and
-  `tsc -p .` once the engine has written `.claude-plugin/types/`.
+- Checks: `claude plugin validate .`, `claude plugin test .`,
+  `node scripts/check.mjs` (the read-only rule, argv lists, imports and
+  `.catch`; run in CI), and `tsc -p .` once the engine has written
+  `.claude-plugin/types/`.
 
 ### Loading the mod during development
 

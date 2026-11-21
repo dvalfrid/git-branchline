@@ -106,6 +106,7 @@ Checks:
 ```
 claude plugin validate .
 claude plugin test .
+node scripts/check.mjs
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for how the code is laid out and how

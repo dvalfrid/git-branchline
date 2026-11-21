@@ -245,3 +245,13 @@ Steps 1–9 are done. Open questions are below; anything new starts as an issue.
   enabled. It notes that two userConfig options are not set; both have
   defaults. An installed plugin is kept per `version`, so each release raises
   it (see CONTRIBUTING.md).
+- 2026-11-21: `scripts/check.mjs` (Node only) holds the code to the rules
+  that validate and the tests do not: each git call is one of the reads or
+  `branch -d`, with a literal subcommand; no shell as the program;
+  `$.process.run` only through `repo.ts`; imports only from `claude-code` or
+  relative paths; no leftover script lines (a PowerShell line had been
+  committed inside a comment in `table.ts`); and validate's "gating hook
+  without .catch" fails the check. Each was proved with a fault planted in a
+  copy. CI runs it after the tests; on a pull request it also warns when
+  `hooks/` changed and `CHANGELOG.md` did not. Type-checking with `tsc` is not
+  in CI (it would need TypeScript from npm there).
