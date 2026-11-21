@@ -15,11 +15,17 @@ export const createWatcher = (signature: () => Promise<string>, reload: () => Pr
   let running: Promise<void> | undefined
   let again: { force: boolean } | undefined
 
+  // A failed read never escapes: the next check tries again, and the reload
+  // shows its own error in the pane.
   const run = async (force: boolean): Promise<void> => {
-    const now = await signature()
-    if (!force && now === last) return
-    last = now
-    await reload()
+    try {
+      const now = await signature()
+      if (!force && now === last) return
+      last = now
+      await reload()
+    } catch {
+      last = undefined
+    }
   }
 
   const check = async (force = false): Promise<void> => {

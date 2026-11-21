@@ -5,6 +5,10 @@ All notable changes are listed here. Versions follow
 
 ## Unreleased
 
+- Fixed: a branch name holding backticks (Git allows them) is shown and put
+  in a prompt exactly, instead of with `'` in their place or broken apart.
+- `git diff` runs with `--no-ext-diff --no-textconv`, so a repository's own
+  diff programs never run.
 ## 0.3.0 (2026-11-21)
 
 - The desktop app's plugin Directory shows the plugin as **Branchline for

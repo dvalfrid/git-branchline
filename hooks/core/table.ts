@@ -1,6 +1,7 @@
 // Turns a snapshot into text for the pane. Pure, like git.ts.
 
 import type { Branch, BranchGroup, Snapshot } from '../../types'
+import { cellCodeSpan } from './markdown'
 
 type Ok = Extract<Snapshot, { state: 'ok' }>
 
@@ -43,7 +44,7 @@ export const STATUS_LABEL: Record<Branch['status'], string> = {
   stale: 'stale',
 }
 
-const code = (text: string): string => '`' + text.replace(/`/g, "'").replace(/\|/g, '\\|') + '`'
+const code = cellCodeSpan
 
 const name = (branch: Branch): string => (branch.isHead ? `**${code(branch.name)}**` : code(branch.name))
 

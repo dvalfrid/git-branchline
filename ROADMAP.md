@@ -357,3 +357,19 @@ Anything new starts as an issue.
   the usage ring or the + sheet); the Mods sheet the API mentions did not
   appear. The mod's mobile drawing (the branch list) stays as it is until the
   app shows panes; the README lists it as a known issue.
+- 2026-11-21: a hardening review. Git runs as argument lists with no shell,
+  branch names after `--`, with Claude Code's 30-second timeout and the
+  repository's hooks off; every call that can fail or time out is caught and
+  shown (`refresh`, `openBranch`, `runDelete`, the fingerprint), and the
+  watcher now swallows a failed read so the next check tries again. Text from
+  the repository is escaped into SVG and Markdown; tried with a commit
+  subject holding HTML, emphasis, links and images, all shown as text. Git
+  allows backticks in branch names (`` x`y ``), which broke out of the code
+  spans in the prompts and showed with `'` elsewhere; `core/markdown.ts`'s
+  `codeSpan` now fences them exactly. `git diff --numstat` ran no external
+  diff or textconv even when a repository's config named them, and now passes
+  `--no-ext-diff --no-textconv` so it never can. Accepted: a bare URL in a
+  commit subject may show as a link (it opens only on a click); a repository
+  with tens of thousands of refs passes `$.process.run`'s 4 MiB output limit,
+  so its branch list is cut; and the prompt box carries branch names, which
+  the person reads before sending.

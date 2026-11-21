@@ -133,7 +133,7 @@ export const readBranchDetails = async (run: Run, base: string, name: string): P
     })
   if (isBase) return { name, state: 'ok', isBase, commits, files: [], added: 0, removed: 0, fileCount: 0 }
 
-  const numstat = await run(['git', 'diff', '--numstat', `${base}...${name}`, '--'])
+  const numstat = await run(['git', 'diff', '--numstat', '--no-ext-diff', '--no-textconv', `${base}...${name}`, '--'])
   const files = numstat.exitCode === 0 ? parseNumstat(numstat.stdout) : []
   const added = files.reduce((sum, file) => sum + file.added, 0)
   const removed = files.reduce((sum, file) => sum + file.removed, 0)

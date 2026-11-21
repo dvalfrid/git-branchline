@@ -54,3 +54,19 @@ test('commands that run git are recognised', () => {
     expect(runsGit(command)).toBe(false)
   }
 })
+
+test('a failed read does not escape, and the next check reads again', async () => {
+  let fail = true
+  let reloads = 0
+  const watcher = createWatcher(
+    async () => 'same',
+    async () => {
+      reloads++
+      if (fail) throw new Error('git timed out')
+    },
+  )
+  await watcher.check()
+  fail = false
+  await watcher.check()
+  expect(reloads).toBe(2)
+})
