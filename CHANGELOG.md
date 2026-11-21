@@ -6,6 +6,9 @@ All notable changes are listed here. Versions follow
 ## Unreleased
 
 - All the pane's buttons are in one row under the headline.
+- A branch group shows its first 30 branches, with **Show all N branches**
+  below; each branch is a drawing of its own, and a repository can have
+  hundreds.
 - **Fold quiet stretches** and **Show tag-only commits** sit beside the tabs
   as check boxes, and are
   kept between sessions. Their defaults are settings (`userConfig`). A folded

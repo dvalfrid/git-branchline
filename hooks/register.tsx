@@ -79,6 +79,11 @@ const view = atom({ plugin: 'git-branchline', key: 'view' } as const, 'graph' as
 // Branch groups folded away in the table; old local branches start folded.
 const hiddenGroups = atom({ plugin: 'git-branchline', key: 'hiddenGroups' } as const, ['old'] as BranchGroup[])
 
+// Groups showing every branch. Others show the first GROUP_LIMIT: each branch
+// is a drawing of its own, and a repository can have hundreds.
+const fullGroups = atom({ plugin: 'git-branchline', key: 'fullGroups' } as const, [] as BranchGroup[])
+const GROUP_LIMIT = 30
+
 /**
  * Pixels per pane cell on the desktop app, measured: a pane 76 cells wide
  * is about 640 px, and a body row about 22 px tall.
@@ -267,6 +272,7 @@ export const register: Register = (on, given) => {
     const chosen = await read($, prefs)
     const mode = foldModeOf(chosen.fold)
     const hidden = await read($, hiddenGroups)
+    const full = await read($, fullGroups)
     const tab = await read($, view)
     const opened = await read($, openedBranch)
     const pending = await read($, pendingDelete)
@@ -520,14 +526,29 @@ export const register: Register = (on, given) => {
             const isHidden = hidden.includes(group.id)
             const toggle = () =>
               void update($, hiddenGroups, list => (isHidden ? list.filter(id => id !== group.id) : [...list, group.id]))
+            const isFull = full.includes(group.id) || group.branches.length <= GROUP_LIMIT
+            const shown = isFull ? group.branches : group.branches.slice(0, GROUP_LIMIT)
+            const more = group.branches.length > GROUP_LIMIT && (
+              <Button
+                key={`more-${group.id}`}
+                plain
+                dimColor
+                onPress={() =>
+                  void update($, fullGroups, list => (isFull ? list.filter(id => id !== group.id) : [...list, group.id]))
+                }
+              >
+                {isFull ? `Show the first ${GROUP_LIMIT}` : `Show all ${group.branches.length} branches`}
+              </Button>
+            )
             return (
               <Box key={`group-${group.id}`} flexDirection="column">
                 <Button key={`toggle-${group.id}`} plain dimColor={isHidden} onPress={toggle}>
                   {`${isHidden ? '▸' : '▾'} ${group.title} (${group.branches.length})`}
                 </Button>
                 {!isHidden && group.id === 'old' && bulkDelete(group.branches)}
-                {!isHidden && drawsRows && group.branches.map(branchRow)}
-                {!isHidden && !drawsRows && <Markdown text={branchTable(group.branches)} />}
+                {!isHidden && drawsRows && shown.map(branchRow)}
+                {!isHidden && !drawsRows && <Markdown text={branchTable(shown)} />}
+                {!isHidden && more}
               </Box>
             )
           })}

@@ -27,11 +27,7 @@ export const bandStatus = (snapshot: Ok): string => {
   return `${branch.name} · ${parts.length > 0 ? `${parts.join(', ')} ${snapshot.base}` : `even with ${snapshot.base}`}`
 }
 
-/** The branch table as markdown'@
-$r="$root\hooks\register.tsx"
-Edit-File $r "import { branchTable, groupBranches, headline } from './core/table'" "import { bandStatus, branchTable, groupBranches, headline } from './core/table'"
-Edit-File $r @'
-// The pane opens by itself once per load, or a sentence when there are no branches. */
+/** The branch table as markdown, or a sentence when there are no branches. */
 export const branchTable = (branches: Branch[]): string => {
   if (branches.length === 0) return '_No branches yet._'
   const rows = branches.map(

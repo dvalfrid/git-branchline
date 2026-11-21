@@ -42,6 +42,11 @@ code if you have TypeScript installed.
 4. Record a decision or a ticked step in `ROADMAP.md` in the same commit, and
    add a line to `CHANGELOG.md` under Unreleased.
 
+A release raises `version` in `.claude-plugin/plugin.json`: Claude Code keeps
+an installed plugin per version, so people who installed it get the change
+only when the number changes. Then tag it (`vX.Y.Z`) and move the Unreleased
+lines in `CHANGELOG.md` under that version.
+
 ## Rules the code keeps
 
 - Read-only by default. The mod never fetches, checks out or pushes on its

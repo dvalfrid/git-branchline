@@ -545,3 +545,33 @@ test('what the pane kept wins over the userConfig default', { options: { foldQui
   expect(((await ui.find({ type: 'Svg' }))?.props as { alt: string }).alt).toBe('Commit graph: 3 rows (9 commits, quiet stretches folded) on 1 lane.')
   await ui.unmount()
 })
+
+test('a group of many branches shows the first 30 until asked for all', async ($, on) => {
+  const names = Array.from({ length: 40 }, (_, i) => `old-${String(i).padStart(2, '0')}`)
+  on('command.register', () => ({ value: { command: 'branchline' } }))
+  on('ui.open', () => ({ value: { isPlaced: true } }))
+  on('process.run', (_, e) => {
+    const args = e.argv.join(' ')
+    if (args.includes(' log ')) return { value: { exitCode: 0, stdout: row('c0', '', '2026-01-01', 'Lars', 'HEAD -> main', 'start') + RS, stderr: '' } }
+    if (args.includes('ahead-behind')) {
+      return { value: { exitCode: 0, stdout: [row('refs/heads/main', '0 0'), ...names.map(n => row(`refs/heads/${n}`, '0 1'))].join('\n'), stderr: '' } }
+    }
+    if (args.includes('for-each-ref')) {
+      const refs = [row('refs/heads/main', 'c0', '', '2026-01-01', '*'), ...names.map(n => row(`refs/heads/${n}`, 'c0', '', '2025-01-01', ''))]
+      return { value: { exitCode: 0, stdout: refs.join('\n'), stderr: '' } }
+    }
+    if (args.includes('symbolic-ref')) return { value: { exitCode: 1, stdout: '', stderr: '' } }
+    return { value: fakeGit(e.argv) }
+  })
+  await $.command.run({ command: 'branchline' })
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  await ui.press({ key: 'tab-branches' })
+  await ui.press({ key: 'toggle-old' })
+  const rows = async () => (await ui.findAll({ type: 'Button', text: '›' })).length
+  expect(await rows()).toBe(31)
+  expect((await ui.find({ key: 'more-old' }))?.text).toBe('Show all 40 branches')
+  await ui.press({ key: 'more-old' })
+  expect(await rows()).toBe(41)
+  expect((await ui.find({ key: 'more-old' }))?.text).toBe('Show the first 30')
+  await ui.unmount()
+})

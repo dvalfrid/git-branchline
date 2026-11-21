@@ -228,3 +228,20 @@ Steps 1–9 are done. Open questions are below; anything new starts as an issue.
   read at `session.start` and `/branchline`; the `userConfig` values are the
   defaults when nothing is kept. Two check boxes (folding: checked `auto`,
   unchecked `never`; tag-only commits) sit beside the tabs.
+- 2026-11-21: tried against real repositories built for it (the mod's
+  `repo.ts` and `core/` run with Node against git 2.56): an empty repository,
+  no remote, `master` and `trunk` as the default branch, detached HEAD, a
+  rebase in progress, shallow clones, a worktree, a submodule, a session in a
+  subfolder, an unrelated orphan branch, unusual names (`ÅÄÖ`, `#`, emoji,
+  markup, 200 characters) and 500 branches with 2,000 tags and 3,000
+  commits. Nothing failed, and every SVG was well-formed. The large one reads
+  in 0.6 s (the 5-second check 0.16 s); with git older than 2.41 (one
+  `rev-list` per branch) it takes 7.5 s. A bare repository reads as "not a
+  Git repository", which is left so. A branch group now shows its first 30
+  branches, with a button for the rest.
+- 2026-11-21: installing from the marketplace was tried in a clean
+  configuration (`CLAUDE_CONFIG_DIR`), with and without an SSH key: Claude
+  Code clones over SSH and falls back to HTTPS, and the plugin installs and is
+  enabled. It notes that two userConfig options are not set; both have
+  defaults. An installed plugin is kept per `version`, so each release raises
+  it (see CONTRIBUTING.md).

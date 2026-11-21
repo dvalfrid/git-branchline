@@ -54,8 +54,24 @@ the prompt box, then **Plugins**, **Add marketplace** with
 `dvalfrid/git-branchline`, then **Add plugin**. A mod installed from a
 terminal at the user scope also loads in the desktop app.
 
+The install clones over SSH and falls back to HTTPS, so no GitHub key is
+needed. It may say that two userConfig options are not set: both have
+defaults (see Settings), so there is nothing to configure.
+
 Requires Git on `PATH`. Git 2.41 or later reads ahead/behind counts in one
-call; older versions fall back to one `rev-list` per branch.
+call; older versions fall back to one `rev-list` per branch, which takes
+seconds in a repository with hundreds of branches.
+
+## Known issues
+
+- In the desktop app, after a click in the pane, it can stop scrolling a
+  couple of rows short of its top while it holds the keyboard. Press Esc (the
+  pane says so). Reported as
+  [anthropics/claude-code#111465](https://github.com/anthropics/claude-code/issues/111465).
+- In VS Code, a pane cannot be scrolled from code
+  ([anthropics/claude-code#104733](https://github.com/anthropics/claude-code/issues/104733)).
+  Branchline has not been tried there yet, nor on mobile.
+
 
 ## Settings
 

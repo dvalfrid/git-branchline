@@ -93,6 +93,8 @@ declare module 'claude-code' {
       snapshot: Shaped<Snapshot>
       /** Branch groups the person has folded away in the table. */
       hiddenGroups: BranchGroup[]
+      /** Branch groups showing every branch, not only the first 30. */
+      fullGroups: BranchGroup[]
       /** The tab the pane shows. */
       view: View
       /** The branch opened in the Branches tab, with what was read for it. */
