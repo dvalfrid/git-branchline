@@ -2,7 +2,7 @@
 
 ## Now / next
 
-Steps 1–9 are done and 0.2.0 is released. Toward 1.0:
+Steps 1–9 are done and 0.3.0 is released. Toward 1.0:
 
 - [x] Install from the marketplace, tried in a clean configuration.
 - [x] Unusual repositories (empty, detached, shallow, worktree, submodule,
@@ -16,8 +16,7 @@ Steps 1–9 are done and 0.2.0 is released. Toward 1.0:
 - [ ] A real screenshot of the pane for the README, the website and the
       plugin directory.
 - [ ] Submit to the plugin directory.
-- [ ] The first release from the Release workflow (its dry run so far stopped,
-      rightly, at an empty Unreleased).
+- [x] The first release from the Release workflow: 0.3.0.
 
 Anything new starts as an issue.
 
