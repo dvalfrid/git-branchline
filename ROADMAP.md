@@ -392,3 +392,7 @@ Anything new starts as an issue.
   codeby.se. Until then the plugin is installed from this repository's own
   marketplace, which is not affected. `plugin.json` now sets `icon`,
   `documentationUrl` and `supportUrl`, which the directory reads.
+- 2026-11-21: the author in `plugin.json` and the marketplace's owner are
+  Code By AB (https://codeby.se), the company that owns the domain and
+  requests Verified, so the listing and the organization agree. The LICENSE
+  copyright line still names Daniel Valfridsson.

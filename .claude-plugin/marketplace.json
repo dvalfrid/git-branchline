@@ -2,7 +2,8 @@
   "name": "git-branchline",
   "description": "Branchline: a live Git history pane beside the chat, for Claude Code",
   "owner": {
-    "name": "Daniel Valfridsson"
+    "name": "Code By AB",
+    "url": "https://codeby.se"
   },
   "plugins": [
     {

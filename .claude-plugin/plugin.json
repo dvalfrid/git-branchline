@@ -4,7 +4,8 @@
   "version": "0.3.1",
   "description": "A live Git history pane beside the chat: branches, tags, HEAD, and how each branch stands against main",
   "author": {
-    "name": "Daniel Valfridsson"
+    "name": "Code By AB",
+    "url": "https://codeby.se"
   },
   "homepage": "https://git-branchline.codeby.se",
   "icon": "./.claude-plugin/icon.png",
