@@ -1,7 +1,8 @@
 {
   "name": "git-branchline",
+  "displayName": "Branchline for Claude Code",
   "version": "0.2.0",
-  "description": "Branchline for Claude Code: a live Git history pane for the session's repo",
+  "description": "A live Git history pane beside the chat: branches, tags, HEAD, and how each branch stands against main",
   "author": {
     "name": "Daniel Valfridsson"
   },

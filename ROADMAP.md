@@ -341,3 +341,10 @@ Anything new starts as an issue.
   route `SECURITY.md` gives), the wiki is off (documentation lives in the
   repository), and Dependabot keeps the workflows' actions current. `main` is
   not protected: the Release workflow pushes to it with the built-in token.
+- 2026-11-21: the desktop app's Directory showed the plugin as "Git
+  branchline", made from its name. `displayName` ("Branchline for Claude
+  Code") is set in the marketplace entry, which the Directory reads before
+  install and which takes effect from `main`, and in `plugin.json`, which
+  takes effect with the next release; the entry also carries the
+  description. Validate knows both fields. The Directory's card shows a
+  generic icon, not `.claude-plugin/icon.png`.

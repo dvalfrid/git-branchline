@@ -7,6 +7,8 @@
   "plugins": [
     {
       "name": "git-branchline",
+      "displayName": "Branchline for Claude Code",
+      "description": "A live Git history pane beside the chat: branches, tags, HEAD, and how each branch stands against main",
       "source": {
         "source": "github",
         "repo": "dvalfrid/git-branchline",

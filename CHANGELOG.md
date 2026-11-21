@@ -5,6 +5,9 @@ All notable changes are listed here. Versions follow
 
 ## Unreleased
 
+- The desktop app's plugin Directory shows the plugin as **Branchline for
+  Claude Code**, with a description, instead of "Git branchline".
+
 ## 0.2.0 (2026-11-21)
 
 - All the pane's buttons are in one row under the headline.
