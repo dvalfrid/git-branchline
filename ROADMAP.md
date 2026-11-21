@@ -2,7 +2,7 @@
 
 ## Now / next
 
-Steps 1–9 are done and 0.3.0 is released. Toward 1.0:
+Steps 1–9 are done and 0.3.2 is released. Toward 1.0:
 
 - [x] Install from the marketplace, tried in a clean configuration.
 - [x] Unusual repositories (empty, detached, shallow, worktree, submodule,
@@ -16,7 +16,7 @@ Steps 1–9 are done and 0.3.0 is released. Toward 1.0:
       API changes: the README says 2.1.326 or later, and to report a break in
       an issue. An `engines["claude-code"]` range in plugin.json (honoured
       from 2.1.323) is not set yet.
-- [ ] Decide the open questions below.
+- [x] Decide the open questions (2026-11-21, under Decisions).
 - [x] A real screenshot of the pane for the README, the website and the
       plugin directory (`docs/screenshot-graph.png`,
       `docs/screenshot-branches.png`, taken on a larger repository).
@@ -48,14 +48,8 @@ Anything new starts as an issue.
 
 ## Open questions
 
-- Should branches fully merged into main be hidden by default?
-- How many commits back (200?), and how far back in time for old branches?
-- Automatic `git fetch`: off by default. Turn it on through `userConfig`?
-- Expanding one folded group with a click: split the graph into SVG pieces
-  around each group and put a button on the group's row? Try whether it looks
-  good.
-- The graph shows at most 150 rows. Is a "Show more" button needed to go
-  further back in large repositories?
+None for 1.0: the questions that were here are decided (2026-11-21, below).
+Later work is in the issues.
 
 ## Decisions
 
@@ -400,3 +394,11 @@ Anything new starts as an issue.
 - 2026-11-21: the website has a `robots.txt` and a one-page `sitemap.xml`
   (its `lastmod` changes by hand when the page does), Open Graph and Twitter
   card tags, and schema.org `SoftwareApplication` data naming Code By AB.
+- 2026-11-21: the open questions, decided for 1.0. Branches fully merged
+  into main stay visible: the Branches tab marks them `merged` and Delete
+  cleans them up, so hiding them would hide the cleanup. The log reads 200
+  commits, and a local branch counts as old after 90 days, as now.
+  Automatic `git fetch` waits until after 1.0, as an opt-in setting
+  (dvalfrid/git-branchline#3). Expanding one folded group with a click
+  waits too (#4): the tooltip lists the commits and the check box turns
+  folding off. A "Show more" past 150 rows is built if people ask (#5).
