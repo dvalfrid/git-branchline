@@ -20,8 +20,8 @@ Steps 1–9 are done and 0.3.0 is released. Toward 1.0:
 - [x] A real screenshot of the pane for the README, the website and the
       plugin directory (`docs/screenshot-graph.png`,
       `docs/screenshot-branches.png`, taken on a larger repository).
-- [ ] Submit to the plugin directory. Blocked until the publisher is a
-      Verified organization (below).
+- [ ] Submit to the plugin directory. Waiting for Verified status for
+      Code By AB, requested 2026-11-21 (below).
 - [x] The first release from the Release workflow: 0.3.0.
 
 Anything new starts as an issue.
@@ -388,8 +388,9 @@ Anything new starts as an issue.
   machine, a mod included, only from a Verified organization. Verified needs
   a paid plan and a domain proven with a DNS TXT record, and a person at
   Anthropic checks that the legal name and website match the domain. The
-  submission of 0.3.1 stopped at that step; Verified is to be requested for
-  codeby.se. Until then the plugin is installed from this repository's own
+  submission of 0.3.1 stopped at that step. codeby.se is proven (a TXT
+  record at Joker, kept in place) and Verified was requested for Code By AB
+  the same day; the answer comes on the case page in the developer portal. Until then the plugin is installed from this repository's own
   marketplace, which is not affected. `plugin.json` now sets `icon`,
   `documentationUrl` and `supportUrl`, which the directory reads.
 - 2026-11-21: the author in `plugin.json` and the marketplace's owner are
