@@ -92,7 +92,8 @@ A plugin installed from a terminal at the user scope also loads in the
 desktop app.
 
 The install clones over SSH and falls back to HTTPS, so no GitHub key is
-needed. It may say that two userConfig options are not set: both have
+needed. An update clones over SSH without that fallback: if it fails with
+"Permission denied (publickey)", see the [FAQ](#faq). It may say that two userConfig options are not set: both have
 defaults (see Settings), so there is nothing to configure.
 
 Requires Git on `PATH`. Git 2.41 or later reads ahead/behind counts in one
@@ -111,6 +112,14 @@ A new release reaches you when you ask for it, then restart Claude Code:
 ```
 claude plugin update git-branchline@git-branchline
 ```
+
+Claude Code can also update it by itself. That is off by default for a
+marketplace that is not Anthropic's. To turn it on, run `/plugin` in a Claude
+Code session in a terminal, open the Marketplaces tab, select `git-branchline`
+and turn on auto-update. Alternatively, add `"autoUpdate": true` next to
+`source` in the marketplace's entry under `extraKnownMarketplaces` in
+`~/.claude/settings.json`. The update runs a few minutes after your first
+message in a session and applies after `/reload-plugins` or the next start.
 
 To remove it:
 
@@ -132,6 +141,69 @@ claude plugin marketplace remove git-branchline
   Remote Control, `/branchline` works (it answers "Branchline updated.") but
   the pane is not shown: the app has no place for a mod's pane there. Use the
   desktop app or the terminal to see it.
+
+## FAQ
+
+### The update fails with "Permission denied (publickey)"
+
+```
+× Failed to update plugin "git-branchline@git-branchline": Failed to clone repository: …
+Load key "/c/Users/you/.ssh/key.pub": invalid format
+git@github.com: Permission denied (publickey).
+```
+
+Your own `git` and `gh` can work over SSH while this fails. Claude Code
+clones the plugin from `git@github.com:` and runs Git with its own SSH
+command, `ssh -o BatchMode=yes -o StrictHostKeyChecking=yes`. That overrides
+`core.sshCommand` in your `.gitconfig`. On Windows the bare `ssh` then is the
+one bundled with Git for Windows (`C:\Program Files\Git\usr\bin\ssh.exe`),
+and that one cannot reach an SSH agent such as 1Password or the Windows
+OpenSSH agent. If your key lives only in the agent, and `~/.ssh/config`
+points `IdentityFile` at the `.pub` file, that ssh finds no key it can use.
+
+Here are the ways around it, from the most lasting to the quickest:
+
+1. **Tell Claude Code which ssh to use.** If `GIT_SSH_COMMAND` is already set,
+   Claude Code keeps it and adds its own options. Put it in the `env` block
+   of `~/.claude/settings.json`:
+
+   ```json
+   {
+     "env": {
+       "GIT_SSH_COMMAND": "C:/Windows/System32/OpenSSH/ssh.exe"
+     }
+   }
+   ```
+
+   Then quit Claude Code fully, the desktop app included, and start it again.
+   It only affects Claude Code. Use the ssh that already works for you, the
+   one `core.sshCommand` names. If your agent asks you to approve the key,
+   approve it in time, or the clone ends with "Connection reset".
+
+2. **Let Git for Windows use the system's ssh.** Run the Git for Windows
+   installer again and choose **Use external OpenSSH**. Git then has no ssh
+   of its own, and every program that runs `git` uses Windows OpenSSH.
+
+3. **Update once over HTTPS.** The repository is public, so no sign-in is
+   needed. In PowerShell:
+
+   ```powershell
+   $env:GIT_CONFIG_COUNT='1'; $env:GIT_CONFIG_KEY_0='url.https://github.com/.insteadOf'; $env:GIT_CONFIG_VALUE_0='git@github.com:'; claude plugin update git-branchline@git-branchline
+   ```
+
+   This holds for the rest of that window, so close it afterwards. In bash:
+
+   ```bash
+   GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0='url.https://github.com/.insteadOf' GIT_CONFIG_VALUE_0='git@github.com:' claude plugin update git-branchline@git-branchline
+   ```
+
+4. **Fetch everything from GitHub over HTTPS.**
+   `git config --global url."https://github.com/".insteadOf git@github.com:`
+   is also lasting, but it moves all your GitHub repositories to HTTPS,
+   pushes too, and they then need the credential manager or `gh auth`.
+
+Turning on auto-update does not get around it: the background update clones
+the same way and stops at the same error.
 
 ## Settings
 

@@ -5,6 +5,10 @@ All notable changes are listed here. Versions follow
 
 ## Unreleased
 
+- The README has a FAQ. Its first entry covers an update that fails with
+  "Permission denied (publickey)" when the SSH key lives in an agent, with
+  ways around it. The README also explains how to turn on auto-update.
+
 ## 0.3.2 (2026-11-21)
 
 - The plugin's icon, documentation and support links are set in

@@ -402,3 +402,7 @@ Later work is in the issues.
   (dvalfrid/git-branchline#3). Expanding one folded group with a click
   waits too (#4): the tooltip lists the commits and the check box turns
   folding off. A "Show more" past 150 rows is built if people ask (#5).
+- 2026-11-22: a one-time notice when Branchline has been updated waits
+  until after 1.0 too (#6). Claude Code only says so in the session where
+  the update ran, so it is easy to miss. The README now has a FAQ for
+  updates that fail over SSH, and it explains how to turn on auto-update.
