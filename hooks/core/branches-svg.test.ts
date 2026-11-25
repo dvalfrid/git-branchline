@@ -1,7 +1,7 @@
 import { expect, test } from 'claude-code/testing'
 
 import type { Branch } from '../../types'
-import { BRANCH_ROW, age, barWidth, branchListSvg } from './branches-svg'
+import { BRANCH_ROW, age, barWidth, branchListSvg, columnsFor, shortAge } from './branches-svg'
 
 const branch = (name: string, extra: Partial<Branch> = {}): Branch => ({
   name,
@@ -34,6 +34,34 @@ test('bars grow slowly and stay inside their half', () => {
   expect(barWidth(1)).toBeLessThan(barWidth(10))
   expect(barWidth(10)).toBeLessThan(barWidth(100))
   expect(barWidth(100000)).toBeLessThanOrEqual(46)
+})
+
+test('short ages for a narrow pane', () => {
+  const today = '2026-11-19'
+  expect(['2026-11-19', '2026-11-18', '2026-10-20', '2026-06-01', '2023-01-01'].map(d => shortAge(d, today))).toEqual([
+    'today',
+    '1d',
+    '4w',
+    '6mo',
+    '4y',
+  ])
+})
+
+test('a narrow pane shrinks the bar and the age before the name', () => {
+  const wide = columnsFor(600)
+  const middle = columnsFor(460)
+  const narrow = columnsFor(324)
+  expect(wide.ageStyle).toBe('long')
+  expect(middle.ageStyle).toBe('short')
+  expect(narrow.ageStyle).toBe('none')
+  expect(narrow.half).toBeLessThan(wide.half)
+  // The name always keeps room, and nothing is drawn left of the dot.
+  for (const columns of [wide, middle, narrow]) expect(columns.nameEnd - 30).toBeGreaterThanOrEqual(70)
+  expect(barWidth(100000, narrow.half)).toBeLessThanOrEqual(narrow.half - 18)
+
+  const { source } = branchListSvg([branch('feature/narrow-pane')], { width: 324, today: '2026-11-19', laneOf: () => 1 })
+  expect(source).toContain('>feature/narro')
+  expect(source).not.toContain('days ago')
 })
 
 test('a row per branch, with HEAD, the lane color, chips and escaped names', () => {

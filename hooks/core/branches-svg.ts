@@ -46,14 +46,42 @@ export type BranchListOptions = {
   laneOf?: (sha: string) => number | undefined
 }
 
+/** Room the name should keep before the columns on the right shrink. */
+const MIN_NAME = 130
+const NAME_LEFT = PAD + 18
+
+/**
+ * Columns, from the right: chip, bar, age; the name takes the rest. A narrow
+ * pane gets shorter bars, then a short age ("3w"), then no age at all, so the
+ * name keeps room to be read.
+ */
+type Columns = { half: number; ageStyle: 'long' | 'short' | 'none'; chipRight: number; barCenter: number; ageRight: number; nameEnd: number }
+
+const LAYOUTS: { half: number; ageStyle: Columns['ageStyle']; chipGap: number; ageWidth: number }[] = [
+  { half: BAR_HALF, ageStyle: 'long', chipGap: 92, ageWidth: 84 },
+  { half: 48, ageStyle: 'short', chipGap: 76, ageWidth: 34 },
+  { half: 36, ageStyle: 'none', chipGap: 70, ageWidth: 0 },
+]
+
+export const columnsFor = (width: number): Columns => {
+  const chipRight = width - PAD
+  const place = (layout: (typeof LAYOUTS)[number]): Columns => {
+    const barCenter = chipRight - layout.chipGap - layout.half - 28
+    const ageRight = barCenter - layout.half - 34
+    return { half: layout.half, ageStyle: layout.ageStyle, chipRight, barCenter, ageRight, nameEnd: ageRight - layout.ageWidth }
+  }
+  for (const layout of LAYOUTS) {
+    const columns = place(layout)
+    if (columns.nameEnd - NAME_LEFT >= MIN_NAME) return columns
+  }
+  return place(LAYOUTS[LAYOUTS.length - 1])
+}
+
 export const branchListSvg = (branches: Branch[], options: BranchListOptions): { source: string; height: number; alt: string } => {
   const { width, today } = options
   const height = branches.length * BRANCH_ROW
-  // Columns, from the right: chip, bar, age; the name takes the rest.
-  const chipRight = width - PAD
-  const barCenter = chipRight - 92 - BAR_HALF - 28
-  const ageRight = barCenter - BAR_HALF - 34
-  const nameLeft = PAD + 18
+  const { half, ageStyle, chipRight, barCenter, ageRight, nameEnd } = columnsFor(width)
+  const nameLeft = NAME_LEFT
   const out: string[] = [
     `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMinYMin meet">`,
     `<style>${STYLE}</style>`,
@@ -83,12 +111,15 @@ export const branchListSvg = (branches: Branch[], options: BranchListOptions): {
       x += 44
     }
     const suffix = branch.hasRemote ? ' ⇅' : ''
-    const room = Math.floor((ageRight - 84 - x) / CHAR) - suffix.length
+    const room = Math.floor((nameEnd - x) / CHAR) - suffix.length
     out.push(
       `<text class="fg ${branch.isHead ? 'head' : 'name'}" x="${x}" y="${y + 4.5}">${esc(clip(branch.name, room))}<tspan class="dim">${suffix}</tspan></text>`,
     )
 
-    out.push(`<text class="dim" x="${ageRight}" y="${y + 4.5}" text-anchor="end">${esc(age(branch.date, today))}</text>`)
+    if (ageStyle !== 'none') {
+      const when = ageStyle === 'long' ? age(branch.date, today) : shortAge(branch.date, today)
+      out.push(`<text class="dim" x="${ageRight}" y="${y + 4.5}" text-anchor="end">${esc(when)}</text>`)
+    }
 
     // Ahead/behind: behind grows left in grey, ahead grows right in the lane color.
     if (branch.status !== 'base') {
@@ -96,14 +127,14 @@ export const branchListSvg = (branches: Branch[], options: BranchListOptions): {
       const behind = branch.behind
       const ahead = branch.ahead
       if (behind !== undefined && behind > 0) {
-        const w = barWidth(behind)
+        const w = barWidth(behind, half)
         out.push(
           `<rect class="behind" x="${barCenter - 1 - w}" y="${y - 4}" width="${w}" height="8" rx="2"/>`,
           `<text class="dim num" x="${barCenter - w - 5}" y="${y + 4}" text-anchor="end">${behind}</text>`,
         )
       }
       if (ahead !== undefined && ahead > 0) {
-        const w = barWidth(ahead)
+        const w = barWidth(ahead, half)
         out.push(
           `<rect class="f${(lane ?? 1) % LANE_COLORS.length}" x="${barCenter + 1}" y="${y - 4}" width="${w}" height="8" rx="2"/>`,
           `<text class="fg num" x="${barCenter + w + 5}" y="${y + 4}">${ahead}</text>`,
@@ -133,7 +164,19 @@ export const branchListSvg = (branches: Branch[], options: BranchListOptions): {
 }
 
 /** Bar length grows with the log of the count, so 1 and 1000 both read. */
-export const barWidth = (count: number): number => Math.min(BAR_HALF - 18, Math.round(4 + 9 * Math.log2(1 + count)))
+export const barWidth = (count: number, half: number = BAR_HALF): number =>
+  Math.min(half - 18, Math.round(((4 + 9 * Math.log2(1 + count)) * half) / BAR_HALF))
+
+/** "today", "1d", "3w", "4mo", "2y": the age for a narrow pane. */
+export const shortAge = (date: string, today: string): string => {
+  const days = Math.round((Date.parse(today) - Date.parse(date)) / 86_400_000)
+  if (!Number.isFinite(days)) return ''
+  if (days <= 0) return 'today'
+  if (days < 14) return `${days}d`
+  if (days < 60) return `${Math.round(days / 7)}w`
+  if (days < 365) return `${Math.round(days / 30)}mo`
+  return `${Math.round(days / 365)}y`
+}
 
 /** "today", "yesterday", "3 days ago", "5 weeks ago", "4 months ago", "2 years ago". */
 export const age = (date: string, today: string): string => {

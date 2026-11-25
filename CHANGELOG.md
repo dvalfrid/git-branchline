@@ -11,6 +11,9 @@ All notable changes are listed here. Versions follow
 - The README says Branchline needs Claude Code 2.1.284 or later (measured,
   where it said 2.1.326), and a FAQ entry covers a pane that does not load
   because the `claude` in the terminal is older than the desktop app.
+- Fixed: in a narrow pane the Branches tab lost the branch names, and the
+  age was drawn over the dot. A narrow pane now gets shorter ahead/behind
+  bars, then a short age ("3w"), then no age, so the name keeps its room.
 
 ## 0.3.2 (2026-11-21)
 
