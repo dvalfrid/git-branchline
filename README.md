@@ -100,10 +100,11 @@ Requires Git on `PATH`. Git 2.41 or later reads ahead/behind counts in one
 call; older versions fall back to one `rev-list` per branch, which takes
 seconds in a repository with hundreds of branches. Tried with Git 2.56.
 
-Needs Claude Code 2.1.326 or later, the version it is tried with in the
-desktop app and the terminal. An older version may lack parts of the mod API,
-and the pane then does not load. The mod API also changes between versions:
-if a newer Claude Code breaks Branchline, say so in an issue.
+Needs Claude Code 2.1.284 or later. An older version refuses the mod's code,
+and the pane does not load (see the [FAQ](#faq)). The tests pass from 2.1.284;
+it is tried by hand with 2.1.326 and later, in the desktop app and the
+terminal. The mod API also changes between versions: if a newer Claude Code
+breaks Branchline, say so in an issue.
 
 ### Update and uninstall
 
@@ -143,6 +144,20 @@ claude plugin marketplace remove git-branchline
   desktop app or the terminal to see it.
 
 ## FAQ
+
+### The pane does not open, or "hooks module did not load"
+
+```
+git-branchline: hooks module did not load: …register.tsx, compiled line …:
+$ is passed to "update", imported from "claude-code": …
+```
+
+The Claude Code you run is older than 2.1.284, which Branchline needs. Check
+with `claude --version`. The desktop app and the `claude` command in a
+terminal update separately: the desktop app runs a copy of its own, so a
+current desktop app says nothing about the `claude` on your `PATH`. Update
+the terminal one with `claude update`, and the desktop app from its own menu,
+then start a new session.
 
 ### The update fails with "Permission denied (publickey)"
 

@@ -8,6 +8,9 @@ All notable changes are listed here. Versions follow
 - The README has a FAQ. Its first entry covers an update that fails with
   "Permission denied (publickey)" when the SSH key lives in an agent, with
   ways around it. The README also explains how to turn on auto-update.
+- The README says Branchline needs Claude Code 2.1.284 or later (measured,
+  where it said 2.1.326), and a FAQ entry covers a pane that does not load
+  because the `claude` in the terminal is older than the desktop app.
 
 ## 0.3.2 (2026-11-21)
 
