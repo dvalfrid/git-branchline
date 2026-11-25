@@ -48,19 +48,22 @@ test('short ages for a narrow pane', () => {
 })
 
 test('a narrow pane shrinks the bar and the age before the name', () => {
-  const wide = columnsFor(600)
-  const middle = columnsFor(460)
-  const narrow = columnsFor(324)
-  expect(wide.ageStyle).toBe('long')
-  expect(middle.ageStyle).toBe('short')
-  expect(narrow.ageStyle).toBe('none')
-  expect(narrow.half).toBeLessThan(wide.half)
-  // The name always keeps room, and nothing is drawn left of the dot.
-  for (const columns of [wide, middle, narrow]) expect(columns.nameEnd - 30).toBeGreaterThanOrEqual(70)
-  expect(barWidth(100000, narrow.half)).toBeLessThanOrEqual(narrow.half - 18)
+  const layouts = [600, 460, 360, 300].map(columnsFor)
+  expect(layouts.map(c => [c.ageStyle, c.half > 0])).toEqual([
+    ['long', true],
+    ['short', true],
+    ['short', false],
+    ['none', false],
+  ])
+  // The name always keeps room.
+  for (const columns of layouts) expect(columns.nameEnd - 30).toBeGreaterThanOrEqual(120)
+  expect(barWidth(100000, 48)).toBeLessThanOrEqual(30)
 
-  const { source } = branchListSvg([branch('feature/narrow-pane')], { width: 324, today: '2026-11-19', laneOf: () => 1 })
-  expect(source).toContain('>feature/narro')
+  // At 300 px the counts are text, and the name stays readable.
+  const { source } = branchListSvg([branch('feature/narrow-pane')], { width: 300, today: '2026-11-19', laneOf: () => 1 })
+  expect(source).toContain('>feature/narrow')
+  expect(source).toContain('↓5</tspan> <tspan class="f1">↑2</tspan>')
+  expect(source).not.toContain('class="behind"')
   expect(source).not.toContain('days ago')
 })
 

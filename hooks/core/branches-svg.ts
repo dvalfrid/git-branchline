@@ -8,7 +8,9 @@ import { LANE_COLORS } from './svg'
 export const BRANCH_ROW = 30
 const PAD = 12
 const FONT = 12.5
-const CHAR = 6.4
+/** Average glyph widths for the name, regular (weight 500) and bold (HEAD). */
+const CHAR = 6.9
+const CHAR_BOLD = 7.4
 const BAR_HALF = 64
 
 const STYLE = [
@@ -50,24 +52,38 @@ export type BranchListOptions = {
 const MIN_NAME = 130
 const NAME_LEFT = PAD + 18
 
+/** Room for "↓123 ↑45" where a narrow pane writes the counts instead of a bar. */
+const COUNTS_WIDTH = 60
+
 /**
- * Columns, from the right: chip, bar, age; the name takes the rest. A narrow
- * pane gets shorter bars, then a short age ("3w"), then no age at all, so the
- * name keeps room to be read.
+ * Columns, from the right: chip, ahead/behind, age; the name takes the rest.
+ * A narrower pane gets shorter bars and a short age ("3w"), then the counts
+ * as text ("↓49 ↑4") instead of a bar, then no age, so the name keeps room
+ * to be read.
  */
-type Columns = { half: number; ageStyle: 'long' | 'short' | 'none'; chipRight: number; barCenter: number; ageRight: number; nameEnd: number }
+type Columns = {
+  /** Half the bar's width, or 0 where the counts are written as text. */
+  half: number
+  ageStyle: 'long' | 'short' | 'none'
+  chipRight: number
+  /** The bar's axis, or the right edge of the counts. */
+  barCenter: number
+  ageRight: number
+  nameEnd: number
+}
 
 const LAYOUTS: { half: number; ageStyle: Columns['ageStyle']; chipGap: number; ageWidth: number }[] = [
-  { half: BAR_HALF, ageStyle: 'long', chipGap: 92, ageWidth: 84 },
-  { half: 48, ageStyle: 'short', chipGap: 76, ageWidth: 34 },
-  { half: 36, ageStyle: 'none', chipGap: 70, ageWidth: 0 },
+  { half: BAR_HALF, ageStyle: 'long', chipGap: 92, ageWidth: 92 },
+  { half: 48, ageStyle: 'short', chipGap: 76, ageWidth: 44 },
+  { half: 0, ageStyle: 'short', chipGap: 66, ageWidth: 44 },
+  { half: 0, ageStyle: 'none', chipGap: 66, ageWidth: 0 },
 ]
 
 export const columnsFor = (width: number): Columns => {
   const chipRight = width - PAD
   const place = (layout: (typeof LAYOUTS)[number]): Columns => {
-    const barCenter = chipRight - layout.chipGap - layout.half - 28
-    const ageRight = barCenter - layout.half - 34
+    const barCenter = layout.half > 0 ? chipRight - layout.chipGap - layout.half - 28 : chipRight - layout.chipGap
+    const ageRight = layout.half > 0 ? barCenter - layout.half - 34 : barCenter - COUNTS_WIDTH
     return { half: layout.half, ageStyle: layout.ageStyle, chipRight, barCenter, ageRight, nameEnd: ageRight - layout.ageWidth }
   }
   for (const layout of LAYOUTS) {
@@ -80,7 +96,7 @@ export const columnsFor = (width: number): Columns => {
 export const branchListSvg = (branches: Branch[], options: BranchListOptions): { source: string; height: number; alt: string } => {
   const { width, today } = options
   const height = branches.length * BRANCH_ROW
-  const { half, ageStyle, chipRight, barCenter, ageRight, nameEnd } = columnsFor(width)
+  const { half, ageStyle, chipRight, barCenter, ageRight, nameEnd: columnEnd } = columnsFor(width)
   const nameLeft = NAME_LEFT
   const out: string[] = [
     `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMinYMin meet">`,
@@ -111,7 +127,9 @@ export const branchListSvg = (branches: Branch[], options: BranchListOptions): {
       x += 44
     }
     const suffix = branch.hasRemote ? ' ⇅' : ''
-    const room = Math.floor((nameEnd - x) / CHAR) - suffix.length
+    // The base has no counts, so with no age after it the name runs on to the chip.
+    const nameEnd = branch.status === 'base' && half === 0 && ageStyle === 'none' ? barCenter - 8 : columnEnd
+    const room = Math.floor((nameEnd - x) / (branch.isHead ? CHAR_BOLD : CHAR)) - suffix.length
     out.push(
       `<text class="fg ${branch.isHead ? 'head' : 'name'}" x="${x}" y="${y + 4.5}">${esc(clip(branch.name, room))}<tspan class="dim">${suffix}</tspan></text>`,
     )
@@ -121,8 +139,22 @@ export const branchListSvg = (branches: Branch[], options: BranchListOptions): {
       out.push(`<text class="dim" x="${ageRight}" y="${y + 4.5}" text-anchor="end">${esc(when)}</text>`)
     }
 
+    // Ahead/behind as text in a narrow pane: "↓49 ↑4".
+    if (branch.status !== 'base' && half === 0) {
+      const { behind, ahead } = branch
+      const parts =
+        behind === undefined || ahead === undefined
+          ? ['<tspan class="dim">?</tspan>']
+          : [
+              behind > 0 ? `<tspan class="dim">↓${behind}</tspan>` : '',
+              ahead > 0 ? `<tspan class="f${(lane ?? 1) % LANE_COLORS.length}">↑${ahead}</tspan>` : '',
+            ].filter(Boolean)
+      if (parts.length === 0) parts.push('<tspan class="dim">=</tspan>')
+      out.push(`<text class="num" x="${barCenter}" y="${y + 4}" text-anchor="end">${parts.join(' ')}</text>`)
+    }
+
     // Ahead/behind: behind grows left in grey, ahead grows right in the lane color.
-    if (branch.status !== 'base') {
+    if (branch.status !== 'base' && half > 0) {
       out.push(`<line class="axis" x1="${barCenter}" x2="${barCenter}" y1="${y - 8}" y2="${y + 8}"/>`)
       const behind = branch.behind
       const ahead = branch.ahead
