@@ -5,6 +5,8 @@ All notable changes are listed here. Versions follow
 
 ## Unreleased
 
+## 0.3.3 (2026-11-25)
+
 - The README has a FAQ. Its first entry covers an update that fails with
   "Permission denied (publickey)" when the SSH key lives in an agent, with
   ways around it. The README also explains how to turn on auto-update.
