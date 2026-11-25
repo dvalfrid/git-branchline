@@ -13,9 +13,15 @@ Steps 1–9 are done and 0.3.2 is released. Toward 1.0:
 - [x] Try the mobile app: through Remote Control the command works, the pane
       is not shown (below).
 - [x] Say which Claude Code version is needed, and what to do when the mod
-      API changes: the README says 2.1.326 or later, and to report a break in
-      an issue. An `engines["claude-code"]` range in plugin.json (honoured
-      from 2.1.323) is not set yet.
+      API changes: the README says 2.1.284 or later, and to report a break in
+      an issue. Measured 2026-11-25 by running the tests on each version:
+      before 2.1.281 the engine refuses the module (`update($, …)` from
+      `claude-code` is not allowed), 2.1.281–2.1.283 load it but drop the
+      test's `userConfig` options, and from 2.1.284 all tests pass. Tried by
+      hand with 2.1.326 and later. No `engines["claude-code"]` range in
+      plugin.json: it is honoured only from 2.1.323, where every version
+      loads the mod, so a lower bound would keep nobody out. Set one when a
+      newer version needs an upper bound.
 - [x] Decide the open questions (2026-11-21, under Decisions).
 - [x] A real screenshot of the pane for the README, the website and the
       plugin directory (`docs/screenshot-graph.png`,

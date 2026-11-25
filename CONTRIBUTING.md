@@ -45,6 +45,10 @@ Then `npx -p typescript@5 tsc -p .` type-checks the code, tests included.
    node scripts/check.mjs
    npx -p typescript@5 tsc -p .
    ```
+   Run them with a current `claude` (`claude --version`; `claude update`).
+   The desktop app runs its own copy, so the `claude` on `PATH` can be far
+   behind it, and before 2.1.284 the tests that load `hooks/register.tsx`
+   fail with "hooks module did not load".
    `scripts/check.mjs` holds the code to the rules below: every git call
    it finds must be a read (`rev-parse`, `for-each-ref`, `symbolic-ref`,
    `log`, `rev-list`, `diff`) or `branch -d`, with a literal subcommand; no
