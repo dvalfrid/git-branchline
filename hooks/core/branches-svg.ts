@@ -72,16 +72,21 @@ type Columns = {
   nameEnd: number
 }
 
-const LAYOUTS: { half: number; ageStyle: Columns['ageStyle']; chipGap: number; ageWidth: number }[] = [
+type Layout = { half: number; ageStyle: Columns['ageStyle']; chipGap: number; ageWidth: number }
+
+/** The narrowest layout, used when not even it leaves the name its room. */
+const NARROWEST: Layout = { half: 0, ageStyle: 'none', chipGap: 66, ageWidth: 0 }
+
+const LAYOUTS: Layout[] = [
   { half: BAR_HALF, ageStyle: 'long', chipGap: 92, ageWidth: 92 },
   { half: 48, ageStyle: 'short', chipGap: 76, ageWidth: 44 },
   { half: 0, ageStyle: 'short', chipGap: 66, ageWidth: 44 },
-  { half: 0, ageStyle: 'none', chipGap: 66, ageWidth: 0 },
+  NARROWEST,
 ]
 
 export const columnsFor = (width: number): Columns => {
   const chipRight = width - PAD
-  const place = (layout: (typeof LAYOUTS)[number]): Columns => {
+  const place = (layout: Layout): Columns => {
     const barCenter = layout.half > 0 ? chipRight - layout.chipGap - layout.half - 28 : chipRight - layout.chipGap
     const ageRight = layout.half > 0 ? barCenter - layout.half - 34 : barCenter - COUNTS_WIDTH
     return { half: layout.half, ageStyle: layout.ageStyle, chipRight, barCenter, ageRight, nameEnd: ageRight - layout.ageWidth }
@@ -90,7 +95,7 @@ export const columnsFor = (width: number): Columns => {
     const columns = place(layout)
     if (columns.nameEnd - NAME_LEFT >= MIN_NAME) return columns
   }
-  return place(LAYOUTS[LAYOUTS.length - 1])
+  return place(NARROWEST)
 }
 
 export const branchListSvg = (branches: Branch[], options: BranchListOptions): { source: string; height: number; alt: string } => {
